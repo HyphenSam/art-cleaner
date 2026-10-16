@@ -80,6 +80,16 @@ describe('App', () => {
     await waitFor(() => expect(client.downloads).toEqual([['denoiser', 'cleaner']]))
   })
 
+  it('says why saving for offline use failed', async () => {
+    const user = userEvent.setup()
+    const client = new FakeClient()
+    client.download = async () => Promise.reject(new Error('Failed to fetch'))
+    render(<App client={client} />)
+    await user.click(await screen.findByRole('button', { name: /Save for offline use/ }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Couldn't save the files: Failed to fetch/)
+    expect(screen.getByRole('button', { name: /Save for offline use/ })).toBeEnabled()
+  })
+
   it('shows the credits and licences', async () => {
     const user = userEvent.setup()
     render(<App client={new FakeClient()} />)

@@ -22,6 +22,7 @@ export function App({ client }: { client: EngineApi }) {
   const [info, setInfo] = useState<Hello | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [saving, setSaving] = useState<number | null>(null)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const install = useInstallPrompt()
@@ -116,12 +117,14 @@ export function App({ client }: { client: EngineApi }) {
 
   async function saveOffline() {
     setSaving(0)
+    setSaveError(null)
     try {
       await client.download(modelsNeeded(settings, backend), (e) => {
         if (e.phase === 'download') setSaving(e.total ? e.loaded / e.total : 0)
       })
-    } catch {
-      // The button comes back; the next try resumes from what's cached.
+    } catch (error) {
+      // The button comes back; the next try keeps what's already cached.
+      setSaveError(`Couldn't save the files: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setSaving(null)
       refresh()
@@ -227,7 +230,13 @@ export function App({ client }: { client: EngineApi }) {
             </Button>
           </Section>
           <SettingsPanel settings={settings} backend={backend} onChange={setSettings} />
-          <OfflinePanel info={info} settings={settings} progress={saving} onSave={() => void saveOffline()} />
+          <OfflinePanel
+            info={info}
+            settings={settings}
+            progress={saving}
+            error={saveError}
+            onSave={() => void saveOffline()}
+          />
         </div>
 
         <div className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-panel px-5 py-4 lg:static">

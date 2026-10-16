@@ -23,12 +23,15 @@ export function OfflinePanel({
   info,
   settings,
   progress,
+  error,
   onSave,
 }: {
   info: Hello | null
   settings: Settings
   /** 0–1 while saving. */
   progress: number | null
+  /** Why the last save failed, if it did. */
+  error?: string | null
   onSave: () => void
 }) {
   const backend = info?.backend ?? 'webgpu'
@@ -82,6 +85,11 @@ export function OfflinePanel({
         </Button>
       ) : (
         info && <p className="text-xs text-ink-soft">Saved. Works offline with these settings.</p>
+      )}
+      {error && (
+        <p role="alert" className="text-xs text-danger">
+          {error}
+        </p>
       )}
     </Section>
   )
