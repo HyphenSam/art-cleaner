@@ -78,9 +78,12 @@ export class Engine {
     onEvent({ phase: 'prepare' })
     this.runtime ??= await this.deps.startRuntime(bytes.get(ORT_WASM.id)!)
     const runtime = this.runtime
-    // One cleaner at a time: they're the big ones.
+    // One cleaner at a time: they're the big ones. A job that doesn't clean
+    // keeps the loaded one, since re-creating a WebGPU session after
+    // releasing it could hang ORT.
+    const cleaner = cleanerModel(job.settings.cleaner, backend)
     for (const id of this.loaded) {
-      if (id !== 'denoiser' && !ids.includes(id)) {
+      if (steps.clean && id !== 'denoiser' && id !== cleaner) {
         await runtime.release(id)
         this.loaded.delete(id)
       }
@@ -102,7 +105,6 @@ export class Engine {
 
     const decoded = await this.deps.codecs.decode(job.bytes, job.type)
     const image = decoded.upright ? decoded.image : orient(decoded.image, readOrientation(job.bytes))
-    const cleaner = cleanerModel(job.settings.cleaner, backend)
     const models: Models = {
       denoise(tiles, n, size, sigma) {
         signal?.throwIfAborted()

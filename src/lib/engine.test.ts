@@ -96,6 +96,17 @@ describe('Engine.process', () => {
     expect([...runtime.sessions.keys()].sort()).toEqual(['cleanerFast', 'denoiser'])
   })
 
+  it('keeps the cleaner loaded through jobs that only denoise', async () => {
+    // Releasing and re-creating a WebGPU session is where the page hung on "Preparing".
+    const { engine, runtime } = setup()
+    const fast = { ...DEFAULT_SETTINGS, cleaner: 'fast' as const }
+    await engine.process(job(fast), () => {})
+    await engine.process(job({ ...fast, clean: false }), () => {})
+    await engine.process(job(fast), () => {})
+    expect(runtime.created).toEqual(['denoiser@webgpu', 'cleanerFast@webgpu'])
+    expect([...runtime.sessions.keys()].sort()).toEqual(['cleanerFast', 'denoiser'])
+  })
+
   it('falls back to the CPU when WebGPU refuses a model', async () => {
     const { engine, runtime } = setup()
     runtime.failOn = 'webgpu'
