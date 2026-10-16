@@ -17,11 +17,15 @@ export type Reply =
   | { type: 'event'; id: number; event: JobEvent }
   | { type: 'done'; id: number; value: unknown }
   | { type: 'failed'; id: number; message: string; cancelled: boolean }
+  /** The worker lost its GPU. ORT can't recover from that, so nothing it was
+   * doing will finish. */
+  | { type: 'lost'; message: string }
 
 /** A `Worker`, a `MessagePort` or the worker's `self`. */
 export interface Port {
   postMessage(message: unknown, transfer: Transferable[]): void
   onmessage: ((event: MessageEvent) => void) | null
+  terminate?(): void
 }
 
 export type Handlers = {
@@ -36,10 +40,17 @@ type Pending = { resolve(value: unknown): void; reject(error: unknown): void; on
 export class EngineClient {
   private next = 1
   private pending = new Map<number, Pending>()
+  private port: Port
 
-  constructor(private readonly port: Port) {
+  /** `start` makes a worker; it's called again to replace one that lost its GPU. */
+  constructor(private readonly start: () => Port) {
+    this.port = this.listen(start())
+  }
+
+  private listen(port: Port) {
     port.onmessage = (event: MessageEvent<Reply>) => {
       const reply = event.data
+      if (reply.type === 'lost') return this.restart(reply.message)
       const waiting = this.pending.get(reply.id)
       if (!waiting) return
       if (reply.type === 'event') return waiting.onEvent?.(reply.event)
@@ -47,6 +58,16 @@ export class EngineClient {
       if (reply.type === 'done') waiting.resolve(reply.value)
       else waiting.reject(reply.cancelled ? new DOMException(reply.message, 'AbortError') : new Error(reply.message))
     }
+    return port
+  }
+
+  /** Fails everything the old worker was doing and starts a new one. */
+  private restart(message: string) {
+    this.port.onmessage = null
+    this.port.terminate?.()
+    for (const waiting of this.pending.values()) waiting.reject(new Error(message))
+    this.pending.clear()
+    this.port = this.listen(this.start())
   }
 
   hello() {

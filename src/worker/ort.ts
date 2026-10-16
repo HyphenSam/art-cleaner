@@ -21,16 +21,21 @@ export function threads(): number {
 
 /** `wasm` is ORT's WebGPU build, already downloaded and checked; only its
  * small loader script is served with the app. */
-export async function startRuntime(wasm: ArrayBuffer): Promise<Runtime> {
+export async function startRuntime(wasm: ArrayBuffer, onGpuLost: () => void): Promise<Runtime> {
   ort.env.wasm.wasmBinary = wasm
   ort.env.wasm.wasmPaths = { mjs: new URL(loaderUrl, self.location.href).href }
   ort.env.wasm.numThreads = threads()
   ort.env.logLevel = 'warning'
-  return new OrtRuntime()
+  return new OrtRuntime(onGpuLost)
 }
+
+type GpuDevice = { lost: Promise<{ reason: string; message: string }> }
 
 class OrtRuntime implements Runtime {
   private sessions = new Map<ModelId, ort.InferenceSession>()
+  private watching = false
+
+  constructor(private readonly onGpuLost: () => void) {}
 
   async load(id: ModelId, model: ArrayBuffer, backend: Backend) {
     await this.release(id)
@@ -39,6 +44,19 @@ class OrtRuntime implements Runtime {
       graphOptimizationLevel: 'all',
     })
     this.sessions.set(id, session)
+    if (backend === 'webgpu' && !this.watching) {
+      this.watching = true
+      void this.watchGpu()
+    }
+  }
+
+  /** A lost GPU (a driver reset, the GPU process crashing) leaves ORT's
+   * pending calls unsettled for good, so the page has to start over. */
+  private async watchGpu() {
+    const device = (await ort.env.webgpu.device) as unknown as GpuDevice
+    const info = await device.lost
+    console.warn(`WebGPU device lost (${info.reason}): ${info.message}`)
+    if (info.reason !== 'destroyed') this.onGpuLost()
   }
 
   async release(id: ModelId) {

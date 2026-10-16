@@ -5,16 +5,20 @@ import { cachedIds, loadAsset, pruneCache } from '@/lib/assets'
 import { ASSET_BASE, ASSET_CACHE } from '@/lib/config'
 import { Engine } from '@/lib/engine'
 import { ALL_ASSETS, type Asset, assetUrl } from '@/lib/manifest'
-import { type Port, serve } from '@/lib/protocol'
+import { type Port, type Reply, serve } from '@/lib/protocol'
 import { codecs } from './codecs'
 import { detectBackend, startRuntime, threads } from './ort'
 
 const urlOf = (asset: Asset) => new URL(assetUrl(ASSET_BASE, asset), self.location.href).href
 const cache = () => caches.open(ASSET_CACHE)
 
+// The page fails what was running with this and replaces the worker.
+const gpuLost = () =>
+  self.postMessage({ type: 'lost', message: 'The GPU stopped responding. Try again.' } satisfies Reply)
+
 const engine = new Engine({
   detectBackend,
-  startRuntime,
+  startRuntime: (wasm) => startRuntime(wasm, gpuLost),
   codecs,
   load: async (asset, onProgress, signal) =>
     loadAsset(asset, urlOf(asset), { cache: await cache(), fetch, onProgress, signal }),

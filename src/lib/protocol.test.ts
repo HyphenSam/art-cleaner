@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import type { JobEvent } from './engine'
-import { EngineClient, type Handlers, serve } from './protocol'
+import { EngineClient, type Handlers, type Reply, serve } from './protocol'
 import { DEFAULT_SETTINGS } from './settings'
 
 let channels: MessageChannel[] = []
@@ -12,11 +12,16 @@ afterEach(() => {
   channels = []
 })
 
-function connect(handlers: Partial<Handlers>) {
+function open(handlers: Partial<Handlers>) {
   const channel = new MessageChannel()
   channels.push(channel)
   serve(channel.port2, handlers as Handlers)
-  return new EngineClient(channel.port1)
+  return channel
+}
+
+function connect(handlers: Partial<Handlers>) {
+  const channel = open(handlers)
+  return new EngineClient(() => channel.port1)
 }
 
 describe('EngineClient and serve', () => {
@@ -70,5 +75,23 @@ describe('EngineClient and serve', () => {
     const error = await run.catch((e) => e)
     expect(error).toBeInstanceOf(DOMException)
     expect(error.name).toBe('AbortError')
+  })
+
+  it('fails what was waiting and starts a new worker when the GPU is lost', async () => {
+    const first = open({ process: () => new Promise(() => {}) })
+    const second = open({ hello: async () => ({ backend: 'webgpu', cached: [], isolated: true, threads: 4 }) })
+    const terminated: number[] = []
+    const workers = [first, second].map((channel, k) =>
+      Object.assign(channel.port1, { terminate: () => terminated.push(k) }),
+    )
+    let started = 0
+    const client = new EngineClient(() => workers[started++])
+
+    const job = client.process(new ArrayBuffer(1), '', DEFAULT_SETTINGS, () => {})
+    first.port2.postMessage({ type: 'lost', message: 'The GPU stopped responding.' } satisfies Reply)
+    await expect(job).rejects.toThrow('The GPU stopped responding.')
+    expect(terminated).toEqual([0])
+    expect(started).toBe(2)
+    expect((await client.hello()).backend).toBe('webgpu')
   })
 })
