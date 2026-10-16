@@ -1,4 +1,5 @@
 /** What `assets:prepare` copies and `upload:r2` uploads. */
+import { resolve } from 'node:path'
 import { ALL_ASSETS, type Asset, ORT_WASM } from '../src/lib/manifest.ts'
 
 export type Item = { asset: Asset; from: string; to: string }
@@ -30,4 +31,17 @@ export function uploadArgs(bucket: string, prefix: string, item: Item): string[]
     'public, max-age=31536000, immutable',
     '--remote',
   ]
+}
+
+/** wrangler's own entry point (its package exports don't expose it). */
+const WRANGLER = resolve('node_modules/wrangler/bin/wrangler.js')
+
+/** Runs wrangler with Node itself rather than through `pnpm exec`: on
+ * Windows that needs a shell, which splits arguments with spaces in them. */
+export function uploadCommand(bucket: string, prefix: string, item: Item) {
+  return {
+    command: process.execPath,
+    args: [WRANGLER, ...uploadArgs(bucket, prefix, item)],
+    options: { stdio: 'inherit' as const },
+  }
 }
