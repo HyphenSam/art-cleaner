@@ -88,6 +88,10 @@ describe('App', () => {
     expect(within(dialog).getByText(/CC BY-NC-SA 4.0/)).toBeInTheDocument()
     expect(within(dialog).getAllByText(/Kim2091/).length).toBeGreaterThan(0)
     expect(within(dialog).getByText(/livinginparadise/)).toBeInTheDocument()
+    expect(within(dialog).getByRole('link', { name: /Source code/ })).toHaveAttribute(
+      'href',
+      'https://github.com/HyphenSam/art-cleaner',
+    )
   })
 
   it('moves between images with the arrow keys', async () => {

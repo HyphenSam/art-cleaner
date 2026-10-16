@@ -30,7 +30,7 @@ be used commercially (no ads, no paid tier). The scripts that made the files are
 
 ## Development
 
-Needs Node 24+ and pnpm.
+Needs Node 24+ and pnpm 11 (pinned in `package.json` and `.node-version`, which Cloudflare Pages reads too).
 
 ```bash
 pnpm install

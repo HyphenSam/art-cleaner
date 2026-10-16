@@ -1,6 +1,6 @@
 import { Info, X } from 'lucide-react'
 import { Dialog } from 'radix-ui'
-import { APP_NAME } from '@/lib/brand'
+import { APP_NAME, SOURCE_URL } from '@/lib/brand'
 import { MODELS } from '@/lib/manifest'
 
 export function AboutDialog() {
@@ -70,6 +70,11 @@ export function AboutDialog() {
             </a>{' '}
             codecs (Apache-2.0). {APP_NAME}'s own code is available under the MIT or Apache-2.0 licence; the models keep
             their own licences.
+          </p>
+          <p className="mt-3 text-[13px]">
+            <a href={SOURCE_URL} target="_blank" rel="noreferrer">
+              Source code on GitHub
+            </a>
           </p>
         </Dialog.Content>
       </Dialog.Portal>
