@@ -1,0 +1,19 @@
+node_modules/
+dist/
+dev-dist/
+*.local
+.DS_Store
+
+# Not committed: the handoff notes, the model files (hosted on R2) and the
+# folder `pnpm assets:prepare` fills for the R2 upload and local dev.
+enhance-web-handoff/
+models/
+assets-out/
+
+# Python env for tools/onnx
+.venv/
+__pycache__/
+
+# Review captures from design passes
+.impeccable/review/
+.impeccable/questions/

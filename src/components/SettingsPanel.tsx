@@ -1,0 +1,180 @@
+import { ChevronRight } from 'lucide-react'
+import { Collapsible, Slider } from 'radix-ui'
+import { useState } from 'react'
+import { cn } from '@/lib/cn'
+import { type Backend, type CleanerChoice, cleanerModel, type OutputFormat, type Settings } from '@/lib/settings'
+import { Segmented } from './ui/Segmented'
+import { Toggle } from './ui/Toggle'
+
+const CLEANERS: { value: CleanerChoice; label: string }[] = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'full', label: 'Full' },
+  { value: 'fast', label: 'Fast' },
+]
+
+const FORMATS: { value: OutputFormat; label: string }[] = [
+  { value: 'png', label: 'PNG' },
+  { value: 'webp-lossless', label: 'WebP' },
+  { value: 'webp', label: 'Lossy WebP' },
+]
+
+const PASSES = [
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+]
+
+export function SettingsPanel({
+  settings,
+  backend,
+  onChange,
+}: {
+  settings: Settings
+  backend: Backend
+  onChange: (settings: Settings) => void
+}) {
+  const set = (change: Partial<Settings>) => onChange({ ...settings, ...change })
+  const [more, setMore] = useState(false)
+  const autoPick = cleanerModel('auto', backend) === 'cleaner' ? 'Full' : 'Fast'
+
+  return (
+    <div className="flex flex-col gap-6">
+      <Section title="Steps">
+        <div className="flex flex-col gap-3">
+          <Toggle
+            strong
+            label="Denoise"
+            hint="Removes adversarial noise."
+            checked={settings.denoise}
+            onChange={(denoise) => set({ denoise })}
+          />
+          {settings.denoise && (
+            <Collapsible.Root open={more} onOpenChange={setMore}>
+              <Collapsible.Trigger className="group -ml-1 flex items-center gap-1 rounded-md px-1 text-xs font-medium text-ink-soft hover:text-ink">
+                <ChevronRight className="size-3.5 transition-transform duration-150 group-data-[state=open]:rotate-90" />
+                More options
+              </Collapsible.Trigger>
+              <Collapsible.Content className="mt-3 flex flex-col gap-3 border-l border-line pl-3">
+                <Field label="Passes" hint="Each pass runs over the last one's result.">
+                  <Segmented
+                    label="Passes"
+                    value={String(settings.passes)}
+                    options={PASSES}
+                    onChange={(v) => set({ passes: Number(v) })}
+                  />
+                </Field>
+                <Toggle
+                  label="Maximum quality"
+                  hint="Averages 24 rotated and flipped runs. About 24× slower."
+                  checked={settings.maxQuality}
+                  onChange={(maxQuality) => set({ maxQuality })}
+                />
+              </Collapsible.Content>
+            </Collapsible.Root>
+          )}
+        </div>
+
+        <div className="h-px bg-line" />
+
+        <div className="flex flex-col gap-3">
+          <Toggle
+            strong
+            label="Clean"
+            hint="Removes JPEG artefacts."
+            checked={settings.clean}
+            onChange={(clean) => set({ clean })}
+          />
+          {settings.clean && (
+            <>
+              <Field label="Model" hint={`Fast is about 6× quicker. Auto uses ${autoPick} on this device.`}>
+                <Segmented
+                  label="Cleaner model"
+                  value={settings.cleaner}
+                  options={CLEANERS}
+                  onChange={(cleaner) => set({ cleaner })}
+                />
+              </Field>
+              <Toggle
+                label="Keep 2× size"
+                hint="Saves the upscaled image instead of scaling it back down."
+                checked={settings.keepUpscaled}
+                onChange={(keepUpscaled) => set({ keepUpscaled })}
+              />
+            </>
+          )}
+        </div>
+      </Section>
+
+      <Section title="Output">
+        <Segmented label="Format" value={settings.format} options={FORMATS} onChange={(format) => set({ format })} />
+        {settings.format === 'webp' && (
+          <Field label="Quality" value={String(settings.quality)}>
+            <Slider.Root
+              className="relative flex h-5 touch-none items-center select-none"
+              min={1}
+              max={100}
+              step={1}
+              value={[settings.quality]}
+              onValueChange={([quality]) => set({ quality })}
+            >
+              <Slider.Track className="relative h-1 grow rounded-full bg-line-strong">
+                <Slider.Range className="absolute h-full rounded-full bg-accent" />
+              </Slider.Track>
+              <Slider.Thumb
+                aria-label="Quality"
+                className="block size-4 rounded-full bg-white shadow-[0_0_0_1px_var(--color-line-strong),0_1px_3px_oklch(0_0_0/0.25)] focus-visible:outline-2 focus-visible:outline-accent"
+              />
+            </Slider.Root>
+          </Field>
+        )}
+        <p className="text-xs text-ink-soft">
+          {settings.format === 'png'
+            ? 'Lossless, optimised. Keeps transparency.'
+            : settings.format === 'webp-lossless'
+              ? 'Lossless, and usually smaller than PNG.'
+              : 'Smallest files. Some detail is lost; higher quality loses less.'}
+        </p>
+      </Section>
+    </div>
+  )
+}
+
+export function Section({
+  title,
+  children,
+  className,
+}: {
+  title: string
+  children: React.ReactNode
+  className?: string
+}) {
+  return (
+    <section className={cn('flex flex-col gap-4', className)}>
+      <h2 className="text-[13px] font-medium text-ink-soft">{title}</h2>
+      {children}
+    </section>
+  )
+}
+
+function Field({
+  label,
+  hint,
+  value,
+  children,
+}: {
+  label: string
+  hint?: string
+  value?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between text-[13px] font-medium">
+        <span>{label}</span>
+        {value && <span className="text-ink-soft tabular-nums">{value}</span>}
+      </div>
+      {children}
+      {hint && <p className="text-xs text-ink-soft">{hint}</p>}
+    </div>
+  )
+}

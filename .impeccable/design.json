@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-16T22:40:00Z",
+  "title": "Design System: Art Cleaner",
+  "extensions": {
+    "colorMeta": {
+      "accent": {
+        "role": "primary",
+        "displayName": "Workbench Indigo",
+        "canonical": "oklch(0.51 0.21 277)",
+        "tonalRamp": ["oklch(0.2 0.1 277)", "oklch(0.3 0.15 277)", "oklch(0.4 0.19 277)", "oklch(0.51 0.21 277)", "oklch(0.62 0.18 277)", "oklch(0.74 0.12 277)", "oklch(0.86 0.06 277)", "oklch(0.95 0.03 277)"]
+      },
+      "canvas": { "role": "neutral", "displayName": "Canvas", "canonical": "oklch(0.975 0.002 286)" },
+      "panel": { "role": "neutral", "displayName": "Panel", "canonical": "oklch(1 0 0)" },
+      "stage": { "role": "neutral", "displayName": "Stage Grey", "canonical": "oklch(0.935 0.003 286)" },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Zinc Ink",
+        "canonical": "oklch(0.21 0.006 286)",
+        "tonalRamp": ["oklch(0.15 0.005 286)", "oklch(0.21 0.006 286)", "oklch(0.33 0.008 286)", "oklch(0.45 0.012 286)", "oklch(0.6 0.01 286)", "oklch(0.75 0.008 286)", "oklch(0.88 0.005 286)", "oklch(0.95 0.003 286)"]
+      },
+      "danger": { "role": "status", "displayName": "Failed Red", "canonical": "oklch(0.55 0.2 25)" },
+      "ok": { "role": "status", "displayName": "Done Green", "canonical": "oklch(0.55 0.13 155)" }
+    },
+    "typographyMeta": {
+      "title": { "displayName": "Title", "purpose": "The empty stage's call to drop images." },
+      "heading": { "displayName": "Heading", "purpose": "A step's own switch label and the app name." },
+      "body": { "displayName": "Body", "purpose": "Dialog prose and button text." },
+      "label": { "displayName": "Label", "purpose": "Section headings, field labels, segmented options." },
+      "caption": { "displayName": "Caption", "purpose": "Hints, status lines, sizes." }
+    },
+    "shadows": [
+      { "name": "float", "value": "0 1px 2px oklch(0 0 0 / 0.06), 0 6px 20px -4px oklch(0 0 0 / 0.14)", "purpose": "Only for overlays: dialogs, the update notice, a thumbnail's remove button." }
+    ],
+    "motion": [
+      { "name": "state", "value": "150ms ease", "purpose": "Colour and opacity changes on controls." },
+      { "name": "ease-out-quint", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "The switch thumb." }
+    ],
+    "breakpoints": [{ "name": "lg", "value": "1024px", "purpose": "Settings column beside the stage." }]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The next action: Clean, Download.",
+      "html": "<button class=\"ds-btn-primary\">Clean 3 images</button>",
+      "css": ".ds-btn-primary { background: var(--color-accent, oklch(0.51 0.21 277)); color: #fff; height: 36px; padding: 0 14px; border: none; border-radius: 8px; font: 500 14px system-ui, sans-serif; transition: background-color 150ms; cursor: pointer; } .ds-btn-primary:hover { background: var(--color-accent-hover, oklch(0.46 0.21 277)); } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-accent, oklch(0.51 0.21 277)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Add images, Download all.",
+      "html": "<button class=\"ds-btn-secondary\">Add images</button>",
+      "css": ".ds-btn-secondary { background: var(--color-panel, #fff); color: var(--color-ink, oklch(0.21 0.006 286)); height: 36px; padding: 0 14px; border: none; box-shadow: 0 0 0 1px var(--color-line-strong, oklch(0.83 0.008 286)); border-radius: 8px; font: 500 14px system-ui, sans-serif; transition: background-color 150ms; cursor: pointer; } .ds-btn-secondary:hover { background: var(--color-sunken, oklch(0.955 0.003 286)); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--color-accent, oklch(0.51 0.21 277)); outline-offset: 2px; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "custom",
+      "refersTo": "segmented",
+      "description": "Model, passes, format and compare mode.",
+      "html": "<div class=\"ds-seg\" role=\"radiogroup\"><button class=\"ds-seg-on\" role=\"radio\" aria-checked=\"true\">PNG</button><button role=\"radio\" aria-checked=\"false\">WebP</button><button role=\"radio\" aria-checked=\"false\">Lossy WebP</button></div>",
+      "css": ".ds-seg { display: flex; padding: 2px; border-radius: 8px; background: var(--color-sunken, oklch(0.955 0.003 286)); width: 280px; } .ds-seg button { flex: 1; height: 28px; border: none; border-radius: 6px; background: transparent; color: var(--color-ink-soft, oklch(0.45 0.012 286)); font: 500 13px system-ui, sans-serif; cursor: pointer; } .ds-seg button:hover { color: var(--color-ink, oklch(0.21 0.006 286)); } .ds-seg .ds-seg-on { background: var(--color-panel, #fff); color: var(--color-ink, oklch(0.21 0.006 286)); box-shadow: 0 1px 2px oklch(0 0 0 / 0.12), 0 0 0 0.5px var(--color-line-strong, oklch(0.83 0.008 286)); }"
+    },
+    {
+      "name": "Switch Row",
+      "kind": "input",
+      "refersTo": "switch-on",
+      "description": "A labelled on/off setting.",
+      "html": "<label class=\"ds-switch-row\"><span><strong>Clean</strong><small>Removes JPEG artefacts.</small></span><span class=\"ds-switch\" role=\"switch\" aria-checked=\"true\"><span></span></span></label>",
+      "css": ".ds-switch-row { display: flex; justify-content: space-between; gap: 12px; width: 280px; font: 14px system-ui, sans-serif; color: var(--color-ink, oklch(0.21 0.006 286)); } .ds-switch-row small { display: block; font-size: 12px; color: var(--color-ink-soft, oklch(0.45 0.012 286)); } .ds-switch { position: relative; width: 36px; height: 20px; border-radius: 9999px; background: var(--color-accent, oklch(0.51 0.21 277)); flex: none; } .ds-switch span { position: absolute; top: 2px; left: 18px; width: 16px; height: 16px; border-radius: 9999px; background: #fff; box-shadow: 0 1px 2px oklch(0 0 0 / 0.3); }"
+    },
+    {
+      "name": "Batch Thumbnail",
+      "kind": "custom",
+      "description": "An image in the batch; state by form: dashed waiting, filling bar working, tick done.",
+      "html": "<div class=\"ds-thumbs\"><span class=\"ds-thumb ds-wait\"></span><span class=\"ds-thumb ds-work\"><i style=\"width:60%\"></i></span><span class=\"ds-thumb ds-done\"><b>✓</b></span></div>",
+      "css": ".ds-thumbs { display: flex; gap: 8px; } .ds-thumb { position: relative; width: 64px; height: 64px; border-radius: 8px; background: var(--color-stage, oklch(0.935 0.003 286)); overflow: hidden; box-shadow: 0 0 0 1px var(--color-line-strong, oklch(0.83 0.008 286)); } .ds-wait { box-shadow: none; outline: 1px dashed var(--color-line-strong, oklch(0.83 0.008 286)); outline-offset: -1px; } .ds-work { box-shadow: 0 0 0 1.5px var(--color-accent, oklch(0.51 0.21 277)); } .ds-work i { position: absolute; left: 0; bottom: 0; height: 6px; background: var(--color-accent, oklch(0.51 0.21 277)); } .ds-done b { position: absolute; top: 4px; right: 4px; width: 16px; height: 16px; border-radius: 9999px; background: var(--color-ok, oklch(0.55 0.13 155)); color: #fff; font: 700 10px/16px system-ui; text-align: center; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Quiet Workbench",
+    "overview": "A bench you bring art to: neutral surfaces, a settings column of short labelled switches, and a large stage where the image sits on plain grey. Nothing on screen competes with the artwork; the one indigo accent marks the next thing to press and whatever is in progress. The system is the category standard (a settings column beside an image stage, in the vein of Upscayl) finished carefully rather than reinvented.\n\nDensity is moderate: compact 13–14 px labels, tight groups, generous separation between groups. Light and dark are equal citizens and follow the system setting. Motion is limited to 150–200 ms state changes.",
+    "keyCharacteristics": [
+      "Zinc neutrals in OKLCH (hue 286), one indigo accent (hue 277).",
+      "System UI type with tabular figures everywhere.",
+      "Hairline borders and tonal layers instead of shadows; one floating shadow for overlays.",
+      "State carried by form as well as colour (dashed, filling, ticked, warned, dimmed)."
+    ],
+    "rules": [
+      { "name": "The Art Owns Colour Rule", "body": "Nothing but the indigo accent and the two status colours carries chroma. The stage stays neutral grey so colours in the art can be judged.", "section": "colors" },
+      { "name": "The Accent Means Act Rule", "body": "Indigo appears only on the next action, the current selection, focus and progress; never as decoration.", "section": "colors" },
+      { "name": "The Sentence Case Rule", "body": "Headings and labels are sentence case at normal tracking. No uppercase tracked labels or eyebrows.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces don't cast shadows at rest; only overlays float.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the stage neutral grey and let the artwork be the only colour.",
+      "Do use the indigo accent only for the next action, selection, focus and progress.",
+      "Do show state by form as well as colour (dashed, bar, tick, warning, dimmed).",
+      "Do use sentence-case headings at 13–14 px, ranked by weight.",
+      "Do keep colour transitions to 150–200 ms."
+    ],
+    "donts": [
+      "Don't use gradients, glass, glows or decorative shadows.",
+      "Don't add uppercase tracked labels, eyebrows or numbered sections.",
+      "Don't tint the stage or put colour behind the artwork.",
+      "Don't load web fonts; the app must work offline with the system UI face."
+    ]
+  }
+}
