@@ -41,7 +41,10 @@ export async function loadAsset(asset: Asset, url: string, options: LoadOptions)
 }
 
 async function download(asset: Asset, url: string, { fetch, onProgress, signal }: LoadOptions) {
-  const response = await fetch(url, { signal })
+  // The Cache API copy above is the only one kept, so skip the HTTP cache:
+  // it would double the storage, and may hold a copy from before the
+  // bucket sent CORS headers, which then fails for a year.
+  const response = await fetch(url, { signal, cache: 'no-store' })
   if (!response.ok || !response.body) throw new Error(`Couldn't download ${asset.file} (HTTP ${response.status}).`)
   const data = new Uint8Array(asset.size)
   const reader = response.body.getReader()

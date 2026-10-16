@@ -34,8 +34,10 @@ class MemoryCache implements AssetCache {
 function server(body: Uint8Array, status = 200) {
   const s = {
     requests: 0,
-    fetch: async (_url: string) => {
+    inits: [] as (RequestInit | undefined)[],
+    fetch: async (_url: string, init?: RequestInit) => {
       s.requests++
+      s.inits.push(init)
       let at = 0
       const stream = new ReadableStream<Uint8Array>({
         pull(controller) {
@@ -66,6 +68,12 @@ describe('loadAsset', () => {
     expect(new Uint8Array(got)).toEqual(bytes)
     expect(seen).toEqual([300, 600, 900, 1000])
     expect(cache.entries.get(URL_)).toEqual(bytes)
+  })
+
+  it("skips the browser's HTTP cache, which may hold a copy from before CORS was set up", async () => {
+    const net = server(bytes)
+    await loadAsset(asset, URL_, { cache: new MemoryCache(), fetch: net.fetch })
+    expect(net.inits[0]).toMatchObject({ cache: 'no-store' })
   })
 
   it('uses a good cached copy without downloading', async () => {
