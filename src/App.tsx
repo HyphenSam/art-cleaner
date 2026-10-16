@@ -47,10 +47,11 @@ export function App({ client }: { client: EngineApi }) {
   // Files dropped or pasted anywhere on the page.
   useEffect(() => {
     const hasFiles = (e: DragEvent) => !!e.dataTransfer && Array.from(e.dataTransfer.types ?? []).includes('Files')
+    // Always cancel, or the browser opens whatever is dropped (an image dragged from another page
+    // can carry only its URL, so it has no files) in place of the app.
     const over = (e: DragEvent) => {
-      if (!hasFiles(e)) return
       e.preventDefault()
-      setDragging(true)
+      if (hasFiles(e)) setDragging(true)
     }
     const leave = (e: DragEvent) => {
       if (!e.relatedTarget) setDragging(false)

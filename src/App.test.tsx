@@ -63,6 +63,14 @@ describe('App', () => {
     expect(within(strip).getAllByRole('listitem')).toHaveLength(1)
   })
 
+  it('never lets the browser open what is dragged onto the page', () => {
+    render(<App client={new FakeClient()} />)
+    // An image dragged from another page may only carry its URL, not a file.
+    const dataTransfer = { files: [], types: ['text/uri-list', 'text/html'] }
+    expect(fireEvent.dragOver(document.body.firstElementChild!, { dataTransfer })).toBe(false)
+    expect(fireEvent.drop(document.body.firstElementChild!, { dataTransfer })).toBe(false)
+  })
+
   it('remembers settings between visits', async () => {
     const user = userEvent.setup()
     const { unmount } = render(<App client={new FakeClient()} />)
