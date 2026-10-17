@@ -20,7 +20,7 @@ your option. **The models are not covered by that licence:**
 
 | Model | Author | Licence |
 |---|---|---|
-| GRDDenoiser (`grd_denoiser.onnx`) | [livinginparadise](https://github.com/livinginparadise/GRDDenoiser) | Redistributed with the author's permission |
+| GRDDenoiser (`grd_denoiser.onnx`) | [livinginparadise](https://github.com/livinginparadise/GRDDenoiser) ([weights](https://huggingface.co/pegasiukas/GRDDenoiser)) | Redistributed with the author's permission |
 | DenoiseGAN and its noise translator (`denoisegan.onnx`, `denoisegan_translator.onnx`) | [livinginparadise](https://github.com/livinginparadise/OmniGAN) ([weights](https://huggingface.co/orangepegasus/DenoiseGAN)) | [MIT, with extra liability and indemnification terms](https://github.com/livinginparadise/OmniGAN/blob/main/LICENSE), © 2026 Algis |
 | 2x-AnimeSharpV4 RCAN and Fast RCAN PU (`animesharp_v4_rcan_2x.onnx`, `animesharp_v4_fast_rcan_pu_2x.onnx`) | [Kim2091](https://huggingface.co/Kim2091/2x-AnimeSharpV4) | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) |
 
