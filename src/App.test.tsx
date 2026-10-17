@@ -105,7 +105,12 @@ describe('App', () => {
     const dialog = screen.getByRole('dialog')
     expect(within(dialog).getByText(/CC BY-NC-SA 4.0/)).toBeInTheDocument()
     expect(within(dialog).getAllByText(/Kim2091/).length).toBeGreaterThan(0)
-    expect(within(dialog).getByText(/livinginparadise/)).toBeInTheDocument()
+    expect(within(dialog).getAllByText(/livinginparadise/)).toHaveLength(2)
+    expect(within(dialog).getByText(/DenoiseGAN/)).toBeInTheDocument()
+    expect(within(dialog).getByRole('link', { name: /MIT licence/ })).toHaveAttribute(
+      'href',
+      'https://github.com/livinginparadise/OmniGAN/blob/main/LICENSE',
+    )
     expect(within(dialog).getByRole('link', { name: /Source code/ })).toHaveAttribute(
       'href',
       'https://github.com/HyphenSam/art-cleaner',

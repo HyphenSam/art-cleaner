@@ -3,11 +3,15 @@ import type { ModelId } from './manifest'
 import type { Steps } from './pipeline'
 
 export type Backend = 'webgpu' | 'wasm'
+export type DenoiserChoice = 'grd' | 'gan'
 export type CleanerChoice = 'auto' | 'full' | 'fast'
 export type OutputFormat = 'png' | 'webp-lossless' | 'webp'
 
 export type Settings = {
   denoise: boolean
+  denoiser: DenoiserChoice
+  /** DenoiseGAN's noise translator, for noise it wasn't trained on. */
+  translator: boolean
   passes: number
   maxQuality: boolean
   clean: boolean
@@ -20,6 +24,8 @@ export type Settings = {
 
 export const DEFAULT_SETTINGS: Settings = {
   denoise: true,
+  denoiser: 'grd',
+  translator: false,
   passes: 1,
   maxQuality: false,
   clean: true,
@@ -40,6 +46,8 @@ export function parseSettings(saved: unknown): Settings {
     options.includes(v as T) ? (v as T) : fallback
   return {
     denoise: bool(s.denoise, d.denoise),
+    denoiser: oneOf(s.denoiser, ['grd', 'gan'], d.denoiser),
+    translator: bool(s.translator, d.translator),
     passes: int(s.passes, 1, 3, d.passes),
     maxQuality: bool(s.maxQuality, d.maxQuality),
     clean: bool(s.clean, d.clean),
@@ -52,7 +60,10 @@ export function parseSettings(saved: unknown): Settings {
 
 export function stepsOf(s: Settings): Steps {
   return {
-    ...(s.denoise && { denoise: { passes: s.passes, maxQuality: s.maxQuality } }),
+    ...(s.denoise && {
+      // DenoiseGAN needs about 0.6 GB per tile: 8 at once is past WebAssembly's 4 GB.
+      denoise: { passes: s.passes, maxQuality: s.maxQuality, ...(s.denoiser === 'gan' && { batch: 1 }) },
+    }),
     ...(s.clean && { clean: { keepUpscaled: s.keepUpscaled } }),
   }
 }
@@ -65,6 +76,12 @@ export function cleanerModel(choice: CleanerChoice, backend: Backend): ModelId {
   return backend === 'webgpu' ? 'cleaner' : 'cleanerFast'
 }
 
+/** In the order they run. */
+export function denoiserModels(s: Settings): ModelId[] {
+  if (s.denoiser === 'grd') return ['denoiser']
+  return s.translator ? ['translator', 'denoiserGan'] : ['denoiserGan']
+}
+
 export function modelsNeeded(s: Settings, backend: Backend): ModelId[] {
-  return [...(s.denoise ? (['denoiser'] as const) : []), ...(s.clean ? [cleanerModel(s.cleaner, backend)] : [])]
+  return [...(s.denoise ? denoiserModels(s) : []), ...(s.clean ? [cleanerModel(s.cleaner, backend)] : [])]
 }

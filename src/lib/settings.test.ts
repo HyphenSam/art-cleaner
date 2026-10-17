@@ -5,6 +5,8 @@ describe('settings', () => {
   it('defaults to denoising and cleaning at the original size, as PNG', () => {
     expect(DEFAULT_SETTINGS).toMatchObject({
       denoise: true,
+      denoiser: 'grd',
+      translator: false,
       passes: 1,
       maxQuality: false,
       clean: true,
@@ -21,9 +23,22 @@ describe('settings', () => {
       passes: 3,
       format: 'webp',
     })
-    expect(parseSettings({ passes: 9, format: 'gif', quality: 500, clean: 'yes', cleaner: 'turbo' })).toEqual(
-      DEFAULT_SETTINGS,
-    )
+    expect(parseSettings({ ...DEFAULT_SETTINGS, denoiser: 'gan', translator: true })).toEqual({
+      ...DEFAULT_SETTINGS,
+      denoiser: 'gan',
+      translator: true,
+    })
+    expect(
+      parseSettings({
+        passes: 9,
+        format: 'gif',
+        quality: 500,
+        clean: 'yes',
+        cleaner: 'turbo',
+        denoiser: 'x',
+        translator: 1,
+      }),
+    ).toEqual(DEFAULT_SETTINGS)
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS)
     expect(parseSettings('nonsense')).toEqual(DEFAULT_SETTINGS)
   })
@@ -39,6 +54,14 @@ describe('settings', () => {
     expect(stepsOf({ ...DEFAULT_SETTINGS, clean: false })).toEqual({ denoise: { passes: 1, maxQuality: false } })
   })
 
+  it('runs DenoiseGAN one tile at a time', () => {
+    expect(stepsOf({ ...DEFAULT_SETTINGS, denoiser: 'gan', passes: 2 }).denoise).toEqual({
+      passes: 2,
+      maxQuality: false,
+      batch: 1,
+    })
+  })
+
   it('picks the full cleaner on the GPU and the fast one on the CPU, unless told', () => {
     expect(cleanerModel('auto', 'webgpu')).toBe('cleaner')
     expect(cleanerModel('auto', 'wasm')).toBe('cleanerFast')
@@ -50,5 +73,12 @@ describe('settings', () => {
     expect(modelsNeeded(DEFAULT_SETTINGS, 'webgpu')).toEqual(['denoiser', 'cleaner'])
     expect(modelsNeeded({ ...DEFAULT_SETTINGS, denoise: false }, 'wasm')).toEqual(['cleanerFast'])
     expect(modelsNeeded({ ...DEFAULT_SETTINGS, clean: false }, 'wasm')).toEqual(['denoiser'])
+    expect(modelsNeeded({ ...DEFAULT_SETTINGS, denoiser: 'gan' }, 'webgpu')).toEqual(['denoiserGan', 'cleaner'])
+    expect(modelsNeeded({ ...DEFAULT_SETTINGS, denoiser: 'gan', translator: true, clean: false }, 'wasm')).toEqual([
+      'translator',
+      'denoiserGan',
+    ])
+    // The translator only goes with DenoiseGAN.
+    expect(modelsNeeded({ ...DEFAULT_SETTINGS, translator: true, clean: false }, 'wasm')).toEqual(['denoiser'])
   })
 })

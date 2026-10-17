@@ -37,6 +37,17 @@ describe('apply', () => {
     expect(models.sigmas.every((s) => s === first)).toBe(true)
   })
 
+  it('puts as many tiles in a model run as the step allows', async () => {
+    const models = new FakeModels()
+    await apply(photo(300, 300), { denoise: { passes: 1, maxQuality: false, batch: 1 } }, models, none)
+    const tiling = { ...DENOISE_TILING, batch: 1 }
+    expect(models.calls).toHaveLength(batchCount(300, 300, tiling))
+    expect(batchCount(300, 300, tiling)).toBeGreaterThan(batchCount(300, 300, DENOISE_TILING))
+    expect(modelRuns(300, 300, { denoise: { passes: 2, maxQuality: false, batch: 1 } })).toBe(
+      2 * batchCount(300, 300, tiling),
+    )
+  })
+
   it('runs each batch 24 times for maximum quality', async () => {
     const models = new FakeModels()
     const out = await apply(photo(100, 100), { denoise: { passes: 1, maxQuality: true } }, models, none)

@@ -42,6 +42,20 @@ export function AboutDialog() {
               </dd>
             </div>
             <div>
+              <dt className="font-medium">Denoiser: {MODELS.denoiserGan.name} and its noise translator</dt>
+              <dd className="text-ink-soft">
+                By{' '}
+                <a href={MODELS.denoiserGan.sourceUrl} target="_blank" rel="noreferrer">
+                  livinginparadise
+                </a>
+                , copyright © 2026 Algis, licensed under the{' '}
+                <a href={MODELS.denoiserGan.licenceUrl} target="_blank" rel="noreferrer">
+                  MIT licence with extra disclaimers
+                </a>
+                . Converted to ONNX (the denoiser's weights stored as 16-bit, run at 32-bit).
+              </dd>
+            </div>
+            <div>
               <dt className="font-medium">Cleaner: 2x-AnimeSharpV4 (RCAN) and its Fast (RCAN PU) variant</dt>
               <dd className="text-ink-soft">
                 By{' '}

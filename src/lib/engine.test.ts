@@ -10,6 +10,8 @@ class FakeRuntime implements Runtime {
   models = new FakeModels()
   sessions = new Map<ModelId, string>()
   created: string[] = []
+  /** Each run's model and sigma. */
+  runs: [ModelId, number | undefined][] = []
   failOn: string | null = null
 
   async load(id: ModelId, bytes: ArrayBuffer, backend: string) {
@@ -23,7 +25,9 @@ class FakeRuntime implements Runtime {
   }
   async run(id: ModelId, tiles: Float32Array, n: number, size: number, sigma?: number) {
     if (!this.sessions.has(id)) throw new Error(`${id} isn't loaded`)
-    return id === 'denoiser' ? this.models.denoise(tiles, n, size, sigma!) : this.models.upscale(tiles, n, size)
+    this.runs.push([id, sigma])
+    if (id === 'translator') return tiles.slice()
+    return id.startsWith('cleaner') ? this.models.upscale(tiles, n, size) : this.models.denoise(tiles, n, size, sigma!)
   }
 }
 
@@ -105,6 +109,33 @@ describe('Engine.process', () => {
     await engine.process(job(fast), () => {})
     expect(runtime.created).toEqual(['denoiser@webgpu', 'cleanerFast@webgpu'])
     expect([...runtime.sessions.keys()].sort()).toEqual(['cleanerFast', 'denoiser'])
+  })
+
+  it('runs DenoiseGAN without a noise level, after the translator when asked', async () => {
+    const { engine, runtime, downloads } = setup({ image: photo(40, 30) })
+    await engine.process(job({ ...DEFAULT_SETTINGS, denoiser: 'gan', clean: false }), () => {})
+    expect(downloads).toEqual(['ort', 'denoiserGan'])
+    expect(runtime.runs).toEqual([['denoiserGan', undefined]])
+
+    runtime.runs = []
+    await engine.process(job({ ...DEFAULT_SETTINGS, denoiser: 'gan', translator: true, clean: false }), () => {})
+    expect(runtime.runs).toEqual([
+      ['translator', undefined],
+      ['denoiserGan', undefined],
+    ])
+  })
+
+  it('swaps the denoiser when the choice changes, keeping the translator until then', async () => {
+    const { engine, runtime } = setup({ image: photo(40, 30) })
+    const gan = { ...DEFAULT_SETTINGS, denoiser: 'gan' as const, translator: true }
+    await engine.process(job(gan), () => {})
+    await engine.process(job({ ...gan, translator: false }), () => {})
+    expect([...runtime.sessions.keys()].sort()).toEqual(['cleaner', 'denoiserGan', 'translator'])
+    await engine.process(job({ ...gan, denoiser: 'grd' }), () => {})
+    expect([...runtime.sessions.keys()].sort()).toEqual(['cleaner', 'denoiser'])
+    // Cleaning only keeps the denoiser loaded.
+    await engine.process(job({ ...gan, denoise: false }), () => {})
+    expect([...runtime.sessions.keys()].sort()).toEqual(['cleaner', 'denoiser'])
   })
 
   it('falls back to the CPU when WebGPU refuses a model', async () => {

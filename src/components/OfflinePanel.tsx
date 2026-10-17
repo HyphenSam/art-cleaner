@@ -8,7 +8,9 @@ import { Button } from './ui/Button'
 
 const LABELS: Record<string, string> = {
   ort: 'ONNX Runtime',
-  denoiser: 'Denoiser',
+  denoiser: 'Denoiser, GRD',
+  denoiserGan: 'Denoiser, DenoiseGAN',
+  translator: 'Noise translator',
   cleaner: 'Cleaner, Full',
   cleanerFast: 'Cleaner, Fast',
 }

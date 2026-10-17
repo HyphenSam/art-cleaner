@@ -85,7 +85,8 @@ keeping the 2× size).
    alpha matters, since canvas premultiplies).
 2. `sigma` once, from the original: luma `0.2989R + 0.5870G + 0.1140B`, |3×3 Laplacian| with zero
    padding, *lower* median / 0.6745, 25/255 if not finite or ≤ 0, clamped 0.0005–1.
-3. Denoise `passes` times (1–3): 256 px tiles, 48 overlap, batch 8. Maximum quality runs each batch
+3. Denoise `passes` times (1–3): 256 px tiles, 48 overlap, batch 8 (1 for DenoiseGAN, which needs
+   ~0.6 GB a tile). With DenoiseGAN, its optional noise translator runs on each tile first. Maximum quality runs each batch
    24 times (8 rotations/flips × gains 0.95/1/1.05) and averages.
 4. Clean (always last): 256 px tiles, 32 overlap, batch 1, output at 2×; quantise to 8 bits; then
    Lanczos3 back to the original size unless "Keep 2× size" is on (off by default).
@@ -94,6 +95,9 @@ keeping the 2× size).
 6. The cleaner streams finished rows (band processing), so memory stays flat for any image size.
 
 Models: `grd_denoiser.onnx` (inputs `image` `[N,3,H,W]`, `sigma` `[N,1]`; H, W multiples of 4),
+`denoisegan.onnx` (input `image`, 0–1, H, W multiples of 16; no sigma; weights rounded to fp16, within
+1/255) and `denoisegan_translator.onnx` (input `image`, 0–1, any size), both wrapped at export from
+the network's [-1, 1],
 `animesharp_v4_rcan_2x.onnx` and `animesharp_v4_fast_rcan_pu_2x.onnx` (input `image`, output
 `upscaled` at 2×, clamp it; fp32 only; the fast one needs even H, W). The cleaner model is Full on
 WebGPU and Fast on the CPU by default.
@@ -117,7 +121,9 @@ WebGPU and Fast on the CPU by default.
 The code is MIT OR Apache-2.0. The models are not: AnimeSharp V4 (both variants, Kim2091) is
 CC BY-NC-SA 4.0, so the site must stay non-commercial (no ads, no paid tier) while it ships them,
 and must credit and link the source and licence and say they were converted to ONNX. GRDDenoiser
-(livinginparadise) is redistributed with the author's permission. Keep the credits in the UI.
+(livinginparadise) is redistributed with the author's permission. DenoiseGAN and its translator
+(livinginparadise, © 2026 Algis) are MIT with extra liability and indemnification terms; credit them
+and link the licence. Keep the credits in the UI.
 
 ## Don't commit
 

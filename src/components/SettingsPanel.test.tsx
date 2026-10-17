@@ -64,6 +64,20 @@ describe('SettingsPanel', () => {
     expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_SETTINGS, passes: 2, maxQuality: true })
   })
 
+  it('offers DenoiseGAN, with its noise translator', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    expect(screen.getByRole('radio', { name: 'GRD' })).toBeChecked()
+    expect(screen.queryByRole('switch', { name: /Noise translator/ })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: 'DenoiseGAN' }))
+    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_SETTINGS, denoiser: 'gan' })
+    await user.click(screen.getByRole('switch', { name: /Noise translator/ }))
+    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_SETTINGS, denoiser: 'gan', translator: true })
+    await user.click(screen.getByRole('switch', { name: 'Denoise' }))
+    expect(screen.queryByRole('radiogroup', { name: 'Denoiser model' })).not.toBeInTheDocument()
+  })
+
   it('says which model Auto picks on this device', () => {
     const { unmount } = render(<Harness backend="webgpu" />)
     expect(screen.getByText(/Auto uses Full on this device/)).toBeInTheDocument()

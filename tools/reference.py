@@ -1,5 +1,7 @@
 """Kura's pipeline in NumPy on ONNX Runtime (CPU), as a reference for the web port.
-Usage: python -I tools/reference.py <models dir> <input> <output.png> [denoise|clean|both] [cleaner .onnx]"""
+Usage: python -I tools/reference.py <models dir> <input> <output.png> [denoise|clean|both] [cleaner .onnx]
+    [denoiser .onnx] [translator .onnx]
+The denoiser gets `sigma` if it takes one (GRDDenoiser does, DenoiseGAN doesn't); the translator runs before it."""
 import sys
 import numpy as np
 import onnxruntime as ort
@@ -8,6 +10,8 @@ from PIL import Image
 models, src, out = sys.argv[1], sys.argv[2], sys.argv[3]
 steps = sys.argv[4] if len(sys.argv) > 4 else "both"
 cleaner = sys.argv[5] if len(sys.argv) > 5 else "animesharp_v4_rcan_2x.onnx"
+denoiser = sys.argv[6] if len(sys.argv) > 6 else "grd_denoiser.onnx"
+translator = sys.argv[7] if len(sys.argv) > 7 else None
 img = np.asarray(Image.open(src).convert("RGB")).astype(np.float32) / 255  # alpha is re-attached unchanged by the app
 x = img.transpose(2, 0, 1).copy()  # planar
 
@@ -62,8 +66,17 @@ def tiled(p, tile, overlap, scale, run):
 sigma = sigma_of(x)
 print("sigma", sigma)
 if steps in ("denoise", "both"):
-    s = ort.InferenceSession(f"{models}/grd_denoiser.onnx", providers=["CPUExecutionProvider"])
-    x = tiled(x, 256, 48, 1, lambda t: s.run(None, {"image": t, "sigma": np.full((1, 1), sigma, np.float32)})[0])
+    s = ort.InferenceSession(f"{models}/{denoiser}", providers=["CPUExecutionProvider"])
+    t = translator and ort.InferenceSession(f"{models}/{translator}", providers=["CPUExecutionProvider"])
+    takes_sigma = any(i.name == "sigma" for i in s.get_inputs())
+
+    def denoise(tile):
+        if t:
+            tile = t.run(None, {"image": tile})[0]
+        feeds = {"image": tile, **({"sigma": np.full((1, 1), sigma, np.float32)} if takes_sigma else {})}
+        return s.run(None, feeds)[0]
+
+    x = tiled(x, 256, 48, 1, denoise)
 if steps in ("clean", "both"):
     s = ort.InferenceSession(f"{models}/{cleaner}", providers=["CPUExecutionProvider"])
     up = tiled(x, 256, 32, 2, lambda t: s.run(None, {"image": t})[0])

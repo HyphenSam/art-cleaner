@@ -7,8 +7,10 @@ import { batchCount, ensemble, estimateSigma, GAINS, processTiled, processTiledT
 
 export type Steps = {
   /** Removes adversarial noise. `passes` runs it again over its own output;
-   * `maxQuality` averages 24 rotated, flipped and brightened runs. */
-  denoise?: { passes: number; maxQuality: boolean }
+   * `maxQuality` averages 24 rotated, flipped and brightened runs. `batch`
+   * is tiles per model run (`DENOISE_TILING`'s unless the model needs less
+   * memory). */
+  denoise?: { passes: number; maxQuality: boolean; batch?: number }
   /** Removes JPEG artefacts: 2× with AnimeSharp, then back to the original
    * size with Lanczos3 unless `keepUpscaled`. Always after denoising. */
   clean?: { keepUpscaled: boolean }
@@ -25,12 +27,17 @@ export const DENOISE_TILING: Tiling = { tile: 256, overlap: 48, scale: 1, batch:
 /** Batching doesn't speed the upscaler up on WebGPU and multiplies its memory. */
 export const CLEAN_TILING: Tiling = { tile: 256, overlap: 32, scale: 2, batch: 1 }
 
+const denoiseTiling = ({ batch }: { batch?: number }): Tiling => ({
+  ...DENOISE_TILING,
+  batch: batch ?? DENOISE_TILING.batch,
+})
+
 /** How many model runs `apply` makes, for progress. */
 export function modelRuns(width: number, height: number, steps: Steps): number {
   let runs = 0
   if (steps.denoise) {
     const perBatch = steps.denoise.maxQuality ? 8 * GAINS.length : 1
-    runs += steps.denoise.passes * perBatch * batchCount(width, height, DENOISE_TILING)
+    runs += steps.denoise.passes * perBatch * batchCount(width, height, denoiseTiling(steps.denoise))
   }
   if (steps.clean) runs += batchCount(width, height, CLEAN_TILING)
   return runs
@@ -57,7 +64,8 @@ export async function apply(
       return out
     }
     const run = steps.denoise.maxQuality ? (t: Float32Array, n: number) => ensemble(t, n, size, denoise) : denoise
-    for (let pass = 0; pass < steps.denoise.passes; pass++) rgb = await processTiledToPlanes(rgb, DENOISE_TILING, run)
+    const tiling = denoiseTiling(steps.denoise)
+    for (let pass = 0; pass < steps.denoise.passes; pass++) rgb = await processTiledToPlanes(rgb, tiling, run)
   }
 
   if (!steps.clean) {

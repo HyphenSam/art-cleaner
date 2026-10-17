@@ -5,7 +5,15 @@ import type { Rgba } from './image'
 import { type Asset, type ModelId, MODELS, ORT_WASM } from './manifest'
 import { orient, readOrientation } from './orientation'
 import { apply, type Models, modelRuns } from './pipeline'
-import { type Backend, cleanerModel, modelsNeeded, type OutputFormat, type Settings, stepsOf } from './settings'
+import {
+  type Backend,
+  cleanerModel,
+  denoiserModels,
+  modelsNeeded,
+  type OutputFormat,
+  type Settings,
+  stepsOf,
+} from './settings'
 
 /** Model sessions on ONNX Runtime. */
 export interface Runtime {
@@ -78,12 +86,13 @@ export class Engine {
     onEvent({ phase: 'prepare' })
     this.runtime ??= await this.deps.startRuntime(bytes.get(ORT_WASM.id)!)
     const runtime = this.runtime
-    // One cleaner at a time: they're the big ones. A job that doesn't clean
-    // keeps the loaded one, since re-creating a WebGPU session after
-    // releasing it could hang ORT.
+    // One choice of model per step at a time: they're big. A model stays
+    // loaded until a job loads another for its step, since re-creating a
+    // WebGPU session after releasing it could hang ORT.
     const cleaner = cleanerModel(job.settings.cleaner, backend)
+    const swapping = new Set(missing.map((id) => MODELS[id].step))
     for (const id of this.loaded) {
-      if (steps.clean && id !== 'denoiser' && id !== cleaner) {
+      if (!ids.includes(id) && swapping.has(MODELS[id].step)) {
         await runtime.release(id)
         this.loaded.delete(id)
       }
@@ -105,10 +114,13 @@ export class Engine {
 
     const decoded = await this.deps.codecs.decode(job.bytes, job.type)
     const image = decoded.upright ? decoded.image : orient(decoded.image, readOrientation(job.bytes))
+    const denoisers = denoiserModels(job.settings)
     const models: Models = {
-      denoise(tiles, n, size, sigma) {
+      async denoise(tiles, n, size, sigma) {
         signal?.throwIfAborted()
-        return runtime.run('denoiser', tiles, n, size, sigma)
+        // Only GRDDenoiser takes the noise level.
+        for (const id of denoisers) tiles = await runtime.run(id, tiles, n, size, id === 'denoiser' ? sigma : undefined)
+        return tiles
       },
       upscale(tiles, n, size) {
         signal?.throwIfAborted()

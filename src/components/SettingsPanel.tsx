@@ -2,9 +2,21 @@ import { ChevronRight } from 'lucide-react'
 import { Collapsible, Slider } from 'radix-ui'
 import { useState } from 'react'
 import { cn } from '@/lib/cn'
-import { type Backend, type CleanerChoice, cleanerModel, type OutputFormat, type Settings } from '@/lib/settings'
+import {
+  type Backend,
+  type CleanerChoice,
+  cleanerModel,
+  type DenoiserChoice,
+  type OutputFormat,
+  type Settings,
+} from '@/lib/settings'
 import { Segmented } from './ui/Segmented'
 import { Toggle } from './ui/Toggle'
+
+const DENOISERS: { value: DenoiserChoice; label: string }[] = [
+  { value: 'grd', label: 'GRD' },
+  { value: 'gan', label: 'DenoiseGAN' },
+]
 
 const CLEANERS: { value: CleanerChoice; label: string }[] = [
   { value: 'auto', label: 'Auto' },
@@ -49,28 +61,46 @@ export function SettingsPanel({
             onChange={(denoise) => set({ denoise })}
           />
           {settings.denoise && (
-            <Collapsible.Root open={more} onOpenChange={setMore}>
-              <Collapsible.Trigger className="group -ml-1 flex items-center gap-1 rounded-md px-1 text-xs font-medium text-ink-soft hover:text-ink">
-                <ChevronRight className="size-3.5 transition-transform duration-150 group-data-[state=open]:rotate-90" />
-                More options
-              </Collapsible.Trigger>
-              <Collapsible.Content className="mt-3 flex flex-col gap-3 border-l border-line pl-3">
-                <Field label="Passes" hint="Each pass runs over the last one's result.">
-                  <Segmented
-                    label="Passes"
-                    value={String(settings.passes)}
-                    options={PASSES}
-                    onChange={(v) => set({ passes: Number(v) })}
-                  />
-                </Field>
-                <Toggle
-                  label="Maximum quality"
-                  hint="Averages 24 rotated and flipped runs. About 24× slower."
-                  checked={settings.maxQuality}
-                  onChange={(maxQuality) => set({ maxQuality })}
+            <>
+              <Field label="Model" hint="DenoiseGAN is about 2.5× slower.">
+                <Segmented
+                  label="Denoiser model"
+                  value={settings.denoiser}
+                  options={DENOISERS}
+                  onChange={(denoiser) => set({ denoiser })}
                 />
-              </Collapsible.Content>
-            </Collapsible.Root>
+              </Field>
+              {settings.denoiser === 'gan' && (
+                <Toggle
+                  label="Noise translator"
+                  hint="Removes Gaussian and other unfamiliar noise more strongly. Can soften fine detail."
+                  checked={settings.translator}
+                  onChange={(translator) => set({ translator })}
+                />
+              )}
+              <Collapsible.Root open={more} onOpenChange={setMore}>
+                <Collapsible.Trigger className="group -ml-1 flex items-center gap-1 rounded-md px-1 text-xs font-medium text-ink-soft hover:text-ink">
+                  <ChevronRight className="size-3.5 transition-transform duration-150 group-data-[state=open]:rotate-90" />
+                  More options
+                </Collapsible.Trigger>
+                <Collapsible.Content className="mt-3 flex flex-col gap-3 border-l border-line pl-3">
+                  <Field label="Passes" hint="Each pass runs over the last one's result.">
+                    <Segmented
+                      label="Passes"
+                      value={String(settings.passes)}
+                      options={PASSES}
+                      onChange={(v) => set({ passes: Number(v) })}
+                    />
+                  </Field>
+                  <Toggle
+                    label="Maximum quality"
+                    hint="Averages 24 rotated and flipped runs. About 24× slower."
+                    checked={settings.maxQuality}
+                    onChange={(maxQuality) => set({ maxQuality })}
+                  />
+                </Collapsible.Content>
+              </Collapsible.Root>
+            </>
           )}
         </div>
 

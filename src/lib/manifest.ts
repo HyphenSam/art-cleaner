@@ -4,10 +4,12 @@
 
 export type Asset = { id: string; file: string; sha256: string; size: number; path: string }
 
-export type ModelId = 'denoiser' | 'cleaner' | 'cleanerFast'
+export type ModelId = 'denoiser' | 'denoiserGan' | 'translator' | 'cleaner' | 'cleanerFast'
 
 export type Model = Asset & {
   id: ModelId
+  /** The pipeline step it runs in. */
+  step: 'denoise' | 'clean'
   name: string
   author: string
   licence: string
@@ -26,6 +28,7 @@ const model = (m: Omit<Model, 'path'>): Model => ({ ...m, path: `models/${m.sha2
 export const MODELS: Record<ModelId, Model> = {
   denoiser: model({
     id: 'denoiser',
+    step: 'denoise',
     name: 'GRDDenoiser',
     author: 'livinginparadise',
     file: 'grd_denoiser.onnx',
@@ -35,8 +38,33 @@ export const MODELS: Record<ModelId, Model> = {
     licenceUrl: 'https://github.com/livinginparadise/GRDDenoiser',
     sourceUrl: 'https://github.com/livinginparadise/GRDDenoiser',
   }),
+  denoiserGan: model({
+    id: 'denoiserGan',
+    step: 'denoise',
+    name: 'DenoiseGAN',
+    author: 'livinginparadise',
+    file: 'denoisegan.onnx',
+    sha256: '14d13dfd43910ec684007d762e8c3ed0d55efec4ab2c8ea4a6406d4c00ce5312',
+    size: 45_106_556,
+    licence: 'MIT',
+    licenceUrl: 'https://github.com/livinginparadise/OmniGAN/blob/main/LICENSE',
+    sourceUrl: 'https://huggingface.co/orangepegasus/DenoiseGAN',
+  }),
+  translator: model({
+    id: 'translator',
+    step: 'denoise',
+    name: 'DenoiseGAN noise translator',
+    author: 'livinginparadise',
+    file: 'denoisegan_translator.onnx',
+    sha256: '0c101d042b6e39ea70a511aad8a64cad13566ddb8a76b570c57841332ea179b3',
+    size: 1_535_370,
+    licence: 'MIT',
+    licenceUrl: 'https://github.com/livinginparadise/OmniGAN/blob/main/LICENSE',
+    sourceUrl: 'https://huggingface.co/orangepegasus/DenoiseGAN',
+  }),
   cleaner: model({
     id: 'cleaner',
+    step: 'clean',
     name: '2x-AnimeSharpV4 (RCAN)',
     author: 'Kim2091',
     file: 'animesharp_v4_rcan_2x.onnx',
@@ -48,6 +76,7 @@ export const MODELS: Record<ModelId, Model> = {
   }),
   cleanerFast: model({
     id: 'cleanerFast',
+    step: 'clean',
     name: '2x-AnimeSharpV4 Fast (RCAN PU)',
     author: 'Kim2091',
     file: 'animesharp_v4_fast_rcan_pu_2x.onnx',
