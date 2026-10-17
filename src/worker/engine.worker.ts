@@ -38,6 +38,10 @@ serve(self as unknown as Port, {
   },
   process: (job, onEvent, signal) => engine.process(job, onEvent, signal),
   download: (ids, onEvent, signal) => engine.download(ids, onEvent, signal),
+  async remove(ids) {
+    // Sessions already loaded keep working; the files download again when next needed.
+    await pruneCache(await cache(), ALL_ASSETS.filter((a) => !ids.includes(a.id)).map(urlOf))
+  },
   async clear() {
     await caches.delete(ASSET_CACHE)
   },

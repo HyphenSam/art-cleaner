@@ -2,14 +2,7 @@ import { ChevronRight } from 'lucide-react'
 import { Collapsible, Slider } from 'radix-ui'
 import { useState } from 'react'
 import { cn } from '@/lib/cn'
-import {
-  type Backend,
-  type CleanerChoice,
-  cleanerModel,
-  type DenoiserChoice,
-  type OutputFormat,
-  type Settings,
-} from '@/lib/settings'
+import { type CleanerChoice, type DenoiserChoice, type OutputFormat, type Settings } from '@/lib/settings'
 import { Segmented } from './ui/Segmented'
 import { Toggle } from './ui/Toggle'
 
@@ -19,9 +12,8 @@ const DENOISERS: { value: DenoiserChoice; label: string }[] = [
 ]
 
 const CLEANERS: { value: CleanerChoice; label: string }[] = [
-  { value: 'auto', label: 'Auto' },
-  { value: 'full', label: 'Full' },
   { value: 'fast', label: 'Fast' },
+  { value: 'full', label: 'Full' },
 ]
 
 const FORMATS: { value: OutputFormat; label: string }[] = [
@@ -36,18 +28,9 @@ const PASSES = [
   { value: '3', label: '3' },
 ]
 
-export function SettingsPanel({
-  settings,
-  backend,
-  onChange,
-}: {
-  settings: Settings
-  backend: Backend
-  onChange: (settings: Settings) => void
-}) {
+export function SettingsPanel({ settings, onChange }: { settings: Settings; onChange: (settings: Settings) => void }) {
   const set = (change: Partial<Settings>) => onChange({ ...settings, ...change })
   const [more, setMore] = useState(false)
-  const autoPick = cleanerModel('auto', backend) === 'cleaner' ? 'Full' : 'Fast'
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,7 +45,7 @@ export function SettingsPanel({
           />
           {settings.denoise && (
             <>
-              <Field label="Model" hint="DenoiseGAN is about 2.5× slower.">
+              <Field label="Model" hint="GRD is recommended. DenoiseGAN is about 2.5× slower.">
                 <Segmented
                   label="Denoiser model"
                   value={settings.denoiser}
@@ -116,7 +99,7 @@ export function SettingsPanel({
           />
           {settings.clean && (
             <>
-              <Field label="Model" hint={`Fast is about 6× quicker. Auto uses ${autoPick} on this device.`}>
+              <Field label="Model" hint="Fast is recommended: about 6× quicker than Full for nearly the same quality.">
                 <Segmented
                   label="Cleaner model"
                   value={settings.cleaner}

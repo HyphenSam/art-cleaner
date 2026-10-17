@@ -28,6 +28,7 @@ class FakeClient implements EngineApi {
     })
   }
   async download() {}
+  async remove() {}
   async clear() {}
 }
 
@@ -39,7 +40,10 @@ const result = (byte: number): JobResult => ({
   mime: 'image/png',
 })
 
-function setup(settings = DEFAULT_SETTINGS) {
+// Both steps on, as the defaults have neither.
+const BOTH: Settings = { ...DEFAULT_SETTINGS, denoise: true, clean: true }
+
+function setup(settings = BOTH) {
   const client = new FakeClient()
   const hook = renderHook(({ s }) => useBatch(client, s), { initialProps: { s: settings } })
   return { client, hook, items: () => hook.result.current.items }
@@ -84,7 +88,7 @@ describe('useBatch', () => {
     act(() => hook.result.current.add([image('a.png'), image('b.png')]))
     act(() => void hook.result.current.start())
     await waitFor(() => expect(client.calls).toHaveLength(1))
-    hook.rerender({ s: { ...DEFAULT_SETTINGS, format: 'webp' } })
+    hook.rerender({ s: { ...BOTH, format: 'webp' } })
     await act(async () => client.calls[0].resolve(result(1)))
     await waitFor(() => expect(client.calls).toHaveLength(2))
     expect(client.calls[0].settings.format).toBe('png')

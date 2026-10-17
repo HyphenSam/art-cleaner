@@ -99,8 +99,8 @@ Models: `grd_denoiser.onnx` (inputs `image` `[N,3,H,W]`, `sigma` `[N,1]`; H, W m
 1/255) and `denoisegan_translator.onnx` (input `image`, 0–1, any size), both wrapped at export from
 the network's [-1, 1],
 `animesharp_v4_rcan_2x.onnx` and `animesharp_v4_fast_rcan_pu_2x.onnx` (input `image`, output
-`upscaled` at 2×, clamp it; fp32 only; the fast one needs even H, W). The cleaner model is Full on
-WebGPU and Fast on the CPU by default.
+`upscaled` at 2×, clamp it; fp32 only; the fast one needs even H, W). The user picks the cleaner model,
+Fast by default (Full is about 6× slower), and neither step is on until they choose.
 
 ## Hosting facts that bite
 

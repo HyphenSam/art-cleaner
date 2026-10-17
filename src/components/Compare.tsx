@@ -11,6 +11,10 @@ export const COMPARE_MODES: { value: CompareMode; label: string }[] = [
   { value: 'side', label: 'Side by side' },
 ]
 
+/** A saved mode, or the slider for anything else. */
+export const parseCompareMode = (saved: unknown): CompareMode =>
+  COMPARE_MODES.find((m) => m.value === saved)?.value ?? 'slider'
+
 /** The original and the result, compared: split by a slider, flipped in
  * place, or side by side. Wheel zoom and drag pan are shared by every mode
  * and both sides. Key it by mode and image: side by side halves the stage,

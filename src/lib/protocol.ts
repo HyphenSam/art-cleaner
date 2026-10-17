@@ -10,6 +10,7 @@ export type Request =
   | { type: 'hello'; id: number }
   | { type: 'process'; id: number; bytes: ArrayBuffer; mime: string; settings: Settings }
   | { type: 'download'; id: number; ids: ModelId[] }
+  | { type: 'remove'; id: number; ids: string[] }
   | { type: 'clear'; id: number }
   | { type: 'cancel'; id: number }
 
@@ -32,6 +33,8 @@ export type Handlers = {
   hello(): Promise<Hello>
   process(job: Job, onEvent: (e: JobEvent) => void, signal: AbortSignal): Promise<JobResult>
   download(ids: ModelId[], onEvent: (e: JobEvent) => void, signal: AbortSignal): Promise<void>
+  /** Deletes the saved copies of these assets (by asset id). */
+  remove(ids: string[]): Promise<void>
   clear(): Promise<void>
 }
 
@@ -82,6 +85,10 @@ export class EngineClient {
     return this.send<void>({ type: 'download', ids }, onEvent, signal)
   }
 
+  remove(ids: string[]) {
+    return this.send<void>({ type: 'remove', ids })
+  }
+
   clear() {
     return this.send<void>({ type: 'clear' })
   }
@@ -118,6 +125,7 @@ export function serve(port: Port, handlers: Handlers) {
       let value: unknown
       let transfer: Transferable[] = []
       if (request.type === 'hello') value = await handlers.hello()
+      else if (request.type === 'remove') value = await handlers.remove(request.ids)
       else if (request.type === 'clear') value = await handlers.clear()
       else if (request.type === 'download') value = await handlers.download(request.ids, onEvent, controller.signal)
       else {

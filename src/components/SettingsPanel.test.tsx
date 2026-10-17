@@ -1,23 +1,19 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_SETTINGS, type Settings } from '@/lib/settings'
 import { SettingsPanel } from './SettingsPanel'
 
-function Harness({
-  onChange = () => {},
-  backend = 'webgpu' as const,
-}: {
-  onChange?: (s: Settings) => void
-  backend?: 'webgpu' | 'wasm'
-}) {
-  const [settings, setSettings] = useState(DEFAULT_SETTINGS)
+// Both steps on, so their options show.
+const BOTH: Settings = { ...DEFAULT_SETTINGS, denoise: true, clean: true }
+
+function Harness({ onChange = () => {}, initial = BOTH }: { onChange?: (s: Settings) => void; initial?: Settings }) {
+  const [settings, setSettings] = useState(initial)
   return (
     <SettingsPanel
       settings={settings}
-      backend={backend}
       onChange={(s) => {
         setSettings(s)
         onChange(s)
@@ -27,11 +23,25 @@ function Harness({
 }
 
 describe('SettingsPanel', () => {
-  it('starts with both steps on and the 2× size off', () => {
+  it('starts with neither step on', () => {
+    render(<Harness initial={DEFAULT_SETTINGS} />)
+    expect(screen.getByRole('switch', { name: 'Denoise' })).not.toBeChecked()
+    expect(screen.getByRole('switch', { name: 'Clean' })).not.toBeChecked()
+  })
+
+  it('starts each step with its recommended model and the 2× size off', () => {
     render(<Harness />)
-    expect(screen.getByRole('switch', { name: 'Denoise' })).toBeChecked()
-    expect(screen.getByRole('switch', { name: 'Clean' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'GRD' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Fast' })).toBeChecked()
+    expect(screen.getByText(/GRD is recommended/)).toBeInTheDocument()
+    expect(screen.getByText(/Fast is recommended/)).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: 'Keep 2× size' })).not.toBeChecked()
+  })
+
+  it('offers the fast cleaner first and the full one second, with no Auto', () => {
+    render(<Harness />)
+    const cleaners = within(screen.getByRole('radiogroup', { name: 'Cleaner model' })).getAllByRole('radio')
+    expect(cleaners.map((r) => r.textContent)).toEqual(['Fast', 'Full'])
   })
 
   it("hides a step's options while it's off", async () => {
@@ -47,9 +57,9 @@ describe('SettingsPanel', () => {
     const onChange = vi.fn()
     render(<Harness onChange={onChange} />)
     await user.click(screen.getByRole('switch', { name: 'Keep 2× size' }))
-    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_SETTINGS, keepUpscaled: true })
-    await user.click(screen.getByRole('radio', { name: 'Fast' }))
-    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_SETTINGS, keepUpscaled: true, cleaner: 'fast' })
+    expect(onChange).toHaveBeenLastCalledWith({ ...BOTH, keepUpscaled: true })
+    await user.click(screen.getByRole('radio', { name: 'Full' }))
+    expect(onChange).toHaveBeenLastCalledWith({ ...BOTH, keepUpscaled: true, cleaner: 'full' })
   })
 
   it('keeps denoise passes and maximum quality under More options', async () => {
@@ -59,9 +69,9 @@ describe('SettingsPanel', () => {
     expect(screen.queryByRole('switch', { name: /Maximum quality/ })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'More options' }))
     await user.click(screen.getByRole('radio', { name: '2' }))
-    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_SETTINGS, passes: 2 })
+    expect(onChange).toHaveBeenLastCalledWith({ ...BOTH, passes: 2 })
     await user.click(screen.getByRole('switch', { name: /Maximum quality/ }))
-    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_SETTINGS, passes: 2, maxQuality: true })
+    expect(onChange).toHaveBeenLastCalledWith({ ...BOTH, passes: 2, maxQuality: true })
   })
 
   it('offers DenoiseGAN, with its noise translator', async () => {
@@ -71,19 +81,11 @@ describe('SettingsPanel', () => {
     expect(screen.getByRole('radio', { name: 'GRD' })).toBeChecked()
     expect(screen.queryByRole('switch', { name: /Noise translator/ })).not.toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: 'DenoiseGAN' }))
-    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_SETTINGS, denoiser: 'gan' })
+    expect(onChange).toHaveBeenLastCalledWith({ ...BOTH, denoiser: 'gan' })
     await user.click(screen.getByRole('switch', { name: /Noise translator/ }))
-    expect(onChange).toHaveBeenLastCalledWith({ ...DEFAULT_SETTINGS, denoiser: 'gan', translator: true })
+    expect(onChange).toHaveBeenLastCalledWith({ ...BOTH, denoiser: 'gan', translator: true })
     await user.click(screen.getByRole('switch', { name: 'Denoise' }))
     expect(screen.queryByRole('radiogroup', { name: 'Denoiser model' })).not.toBeInTheDocument()
-  })
-
-  it('says which model Auto picks on this device', () => {
-    const { unmount } = render(<Harness backend="webgpu" />)
-    expect(screen.getByText(/Auto uses Full on this device/)).toBeInTheDocument()
-    unmount()
-    render(<Harness backend="wasm" />)
-    expect(screen.getByText(/Auto uses Fast on this device/)).toBeInTheDocument()
   })
 
   it('asks for a quality only for lossy WebP', async () => {

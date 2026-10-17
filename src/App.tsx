@@ -104,9 +104,8 @@ export function App({ client }: { client: EngineApi }) {
   const queued = items.filter((i) => i.status === 'queued').length
   const done = items.filter((i) => i.result).length
   const nothingToDo = !settings.denoise && !settings.clean
-  const backend = info?.backend ?? 'webgpu'
   const cached = new Set(info?.cached ?? [])
-  const firstRun = info ? neededAssets(settings, backend).filter((a) => !cached.has(a.id)) : []
+  const firstRun = info ? neededAssets(settings).filter((a) => !cached.has(a.id)) : []
 
   function remove(id: string) {
     if (selected?.id === id) {
@@ -120,7 +119,7 @@ export function App({ client }: { client: EngineApi }) {
     setSaving(0)
     setSaveError(null)
     try {
-      await client.download(modelsNeeded(settings, backend), (e) => {
+      await client.download(modelsNeeded(settings), (e) => {
         if (e.phase === 'download') setSaving(e.total ? e.loaded / e.total : 0)
       })
     } catch (error) {
@@ -128,6 +127,17 @@ export function App({ client }: { client: EngineApi }) {
       setSaveError(`Couldn't save the files: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
       setSaving(null)
+      refresh()
+    }
+  }
+
+  async function deleteFiles(remove: () => Promise<void>) {
+    setSaveError(null)
+    try {
+      await remove()
+    } catch (error) {
+      setSaveError(`Couldn't delete the files: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
       refresh()
     }
   }
@@ -230,13 +240,16 @@ export function App({ client }: { client: EngineApi }) {
               Add images
             </Button>
           </Section>
-          <SettingsPanel settings={settings} backend={backend} onChange={setSettings} />
+          <SettingsPanel settings={settings} onChange={setSettings} />
           <OfflinePanel
             info={info}
             settings={settings}
             progress={saving}
+            busy={batch.running}
             error={saveError}
             onSave={() => void saveOffline()}
+            onRemove={(id) => void deleteFiles(() => client.remove([id]))}
+            onClear={() => void deleteFiles(() => client.clear())}
           />
         </div>
 

@@ -59,6 +59,13 @@ describe('EngineClient and serve', () => {
     expect([a.width, b.width]).toEqual([1, 2])
   })
 
+  it('deletes saved files', async () => {
+    const removed: string[][] = []
+    const client = connect({ remove: async (ids) => void removed.push(ids) })
+    await client.remove(['ort', 'cleaner'])
+    expect(removed).toEqual([['ort', 'cleaner']])
+  })
+
   it('passes errors back as errors', async () => {
     const client = connect({ clear: async () => Promise.reject(new Error('quota')) })
     await expect(client.clear()).rejects.toThrow('quota')

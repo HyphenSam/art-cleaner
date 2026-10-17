@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { outputName, uniqueNames } from './names'
-import { DEFAULT_SETTINGS } from './settings'
+import { DEFAULT_SETTINGS, type Settings } from './settings'
+
+const BOTH: Settings = { ...DEFAULT_SETTINGS, denoise: true, clean: true }
 
 describe('outputName', () => {
   it('names the result after the original and what was done', () => {
-    expect(outputName('art.jpg', DEFAULT_SETTINGS)).toBe('art-denoised-cleaned.png')
-    expect(outputName('art.final.PNG', { ...DEFAULT_SETTINGS, denoise: false, format: 'webp' })).toBe(
-      'art.final-cleaned.webp',
-    )
-    expect(outputName('art', { ...DEFAULT_SETTINGS, clean: false, format: 'webp-lossless' })).toBe('art-denoised.webp')
-    expect(outputName('art.webp', { ...DEFAULT_SETTINGS, keepUpscaled: true })).toBe('art-denoised-cleaned-2x.png')
+    expect(outputName('art.jpg', BOTH)).toBe('art-denoised-cleaned.png')
+    expect(outputName('art.final.PNG', { ...BOTH, denoise: false, format: 'webp' })).toBe('art.final-cleaned.webp')
+    expect(outputName('art', { ...BOTH, clean: false, format: 'webp-lossless' })).toBe('art-denoised.webp')
+    expect(outputName('art.webp', { ...BOTH, keepUpscaled: true })).toBe('art-denoised-cleaned-2x.png')
   })
 
   it('ignores keeping the 2× size when not cleaning', () => {
-    expect(outputName('a.png', { ...DEFAULT_SETTINGS, clean: false, keepUpscaled: true })).toBe('a-denoised.png')
+    expect(outputName('a.png', { ...BOTH, clean: false, keepUpscaled: true })).toBe('a-denoised.png')
   })
 })
 

@@ -6,7 +6,7 @@ import type { EngineClient } from '@/lib/protocol'
 import { type Item, nextQueued, queue, type QueueAction } from '@/lib/queue'
 import type { Settings } from '@/lib/settings'
 
-export type EngineApi = Pick<EngineClient, 'hello' | 'process' | 'download' | 'clear'>
+export type EngineApi = Pick<EngineClient, 'hello' | 'process' | 'download' | 'remove' | 'clear'>
 
 const isAbort = (e: unknown) => e instanceof DOMException && e.name === 'AbortError'
 

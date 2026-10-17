@@ -21,7 +21,16 @@ class FakeClient implements EngineApi {
   async download(ids: string[]) {
     this.downloads.push(ids)
   }
-  async clear() {}
+  removed: string[][] = []
+  cleared = 0
+  async remove(ids: string[]) {
+    this.removed.push(ids)
+    this.info = { ...this.info, cached: this.info.cached.filter((id) => !ids.includes(id)) }
+  }
+  async clear() {
+    this.cleared++
+    this.info = { ...this.info, cached: [] }
+  }
 }
 
 const png = (name: string) => new File([new Uint8Array(4)], name, { type: 'image/png' })
@@ -40,6 +49,8 @@ describe('App', () => {
     const user = userEvent.setup()
     const client = new FakeClient()
     render(<App client={client} />)
+    await user.click(screen.getByRole('switch', { name: 'Denoise' }))
+    await user.click(screen.getByRole('switch', { name: 'Clean' }))
     await user.upload(screen.getByLabelText('Add images'), [png('cat.png'), png('dog.png')])
 
     const strip = screen.getByRole('list', { name: 'Images' })
@@ -80,12 +91,35 @@ describe('App', () => {
     expect(screen.getByRole('radio', { name: 'Lossy WebP' })).toBeChecked()
   })
 
+  it('remembers how results are compared between visits', async () => {
+    const user = userEvent.setup()
+    async function cleanOne() {
+      const client = new FakeClient()
+      const view = render(<App client={client} />)
+      await user.upload(screen.getByLabelText('Add images'), [png('cat.png')])
+      await user.click(screen.getByRole('button', { name: 'Clean 1 image' }))
+      await waitFor(() => expect(client.jobs).toHaveLength(1))
+      await act(async () =>
+        client.jobs[0].resolve({ bytes: new ArrayBuffer(3), width: 8, height: 6, mime: 'image/png' }),
+      )
+      return view
+    }
+    localStorage.setItem('art-cleaner:settings', JSON.stringify({ clean: true }))
+    const first = await cleanOne()
+    await user.click(await screen.findByRole('radio', { name: 'Side by side' }))
+    first.unmount()
+    await cleanOne()
+    expect(await screen.findByRole('radio', { name: 'Side by side' })).toBeChecked()
+  })
+
   it('downloads what the current settings need for offline use', async () => {
     const user = userEvent.setup()
     const client = new FakeClient()
     render(<App client={client} />)
+    await user.click(screen.getByRole('switch', { name: 'Denoise' }))
+    await user.click(screen.getByRole('switch', { name: 'Clean' }))
     await user.click(await screen.findByRole('button', { name: /Save for offline use/ }))
-    await waitFor(() => expect(client.downloads).toEqual([['denoiser', 'cleaner']]))
+    await waitFor(() => expect(client.downloads).toEqual([['denoiser', 'cleanerFast']]))
   })
 
   it('says why saving for offline use failed', async () => {
@@ -96,6 +130,48 @@ describe('App', () => {
     await user.click(await screen.findByRole('button', { name: /Save for offline use/ }))
     expect(await screen.findByRole('alert')).toHaveTextContent(/Couldn't save the files: Failed to fetch/)
     expect(screen.getByRole('button', { name: /Save for offline use/ })).toBeEnabled()
+  })
+
+  it('lists every saved file, including ones the settings do not use', async () => {
+    const client = new FakeClient()
+    client.info = { ...client.info, cached: ['ort', 'denoiserGan'] }
+    render(<App client={client} />)
+    expect(await screen.findByText('ONNX Runtime')).toBeInTheDocument()
+    expect(screen.getByText('Denoiser, DenoiseGAN')).toBeInTheDocument()
+    expect(screen.queryByText('Denoiser, GRD')).not.toBeInTheDocument()
+  })
+
+  it('deletes one saved file', async () => {
+    const user = userEvent.setup()
+    const client = new FakeClient()
+    client.info = { ...client.info, cached: ['ort', 'denoiserGan'] }
+    render(<App client={client} />)
+    // Hidden until asked for, so they can't be clicked by mistake.
+    await screen.findByText('Denoiser, DenoiseGAN')
+    expect(screen.queryByRole('button', { name: /Delete/ })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Manage saved files' }))
+    await user.click(screen.getByRole('button', { name: 'Delete Denoiser, DenoiseGAN' }))
+    expect(client.removed).toEqual([['denoiserGan']])
+    await waitFor(() => expect(screen.queryByText('Denoiser, DenoiseGAN')).not.toBeInTheDocument())
+  })
+
+  it('deletes every saved file once confirmed', async () => {
+    const user = userEvent.setup()
+    const client = new FakeClient()
+    client.info = { ...client.info, cached: ['ort', 'denoiser'] }
+    render(<App client={client} />)
+    await user.click(await screen.findByRole('button', { name: 'Manage saved files' }))
+    await user.click(screen.getByRole('button', { name: /Delete all/ }))
+    const dialog = screen.getByRole('alertdialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+    expect(client.cleared).toBe(0)
+
+    await user.click(screen.getByRole('button', { name: /Delete all/ }))
+    await user.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }))
+    expect(client.cleared).toBe(1)
+    // Nothing left to manage.
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Delete all/ })).not.toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: /Manage saved files|Done/ })).not.toBeInTheDocument()
   })
 
   it('shows the credits and licences', async () => {

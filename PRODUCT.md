@@ -42,7 +42,8 @@ server, and it keeps working offline once installed. Free and open source (MIT O
 ## Capabilities and Constraints
 
 - Steps: Denoise (passes 1–3, optional maximum quality, about 24× slower) and Clean (model
-  Auto / Full / Fast; "Keep 2× size" off by default). Clean always runs after Denoise.
+  Fast / Full, Fast by default; "Keep 2× size" off by default). Neither step is on until the user
+  picks one. Clean always runs after Denoise.
 - Output: PNG (default, optimised), WebP lossless, WebP lossy (quality, default 95). Alpha kept.
 - Any image size (band processing); WebP output is capped at 16383 px a side.
 - Name "Art Cleaner" may change. The site is entirely separate from Kura: never link to it.

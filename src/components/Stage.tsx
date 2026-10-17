@@ -1,10 +1,11 @@
 import { Download, ImagePlus, RotateCcw } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useRemembered } from '@/hooks/useRemembered'
 import { cn } from '@/lib/cn'
 import { formatBytes } from '@/lib/format-bytes'
 import type { Item } from '@/lib/queue'
 import { statusText } from './BatchStrip'
-import { Compare, COMPARE_MODES, type CompareMode } from './Compare'
+import { Compare, COMPARE_MODES, parseCompareMode } from './Compare'
 import { Button } from './ui/Button'
 import { Segmented } from './ui/Segmented'
 
@@ -19,7 +20,7 @@ export function Stage({
   onBrowse: () => void
   onRetry: (id: string) => void
 }) {
-  const [mode, setMode] = useState<CompareMode>('slider')
+  const [mode, setMode] = useRemembered('art-cleaner:compare', parseCompareMode)
   const [showOriginal, setShowOriginal] = useState(false)
   useEffect(() => setShowOriginal(false), [item?.id])
 

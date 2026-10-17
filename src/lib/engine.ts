@@ -78,7 +78,7 @@ export class Engine {
     const steps = stepsOf(job.settings)
     if (!steps.denoise && !steps.clean) throw new Error('Nothing to do: turn on Denoise or Clean.')
     const backend = await this.backend()
-    const ids = modelsNeeded(job.settings, backend)
+    const ids = modelsNeeded(job.settings)
     const missing = ids.filter((id) => !this.loaded.has(id))
     const assets = [...(this.runtime ? [] : [ORT_WASM]), ...missing.map((id) => MODELS[id])]
     const bytes = await this.fetchAll(assets, onEvent, signal)
@@ -89,7 +89,7 @@ export class Engine {
     // One choice of model per step at a time: they're big. A model stays
     // loaded until a job loads another for its step, since re-creating a
     // WebGPU session after releasing it could hang ORT.
-    const cleaner = cleanerModel(job.settings.cleaner, backend)
+    const cleaner = cleanerModel(job.settings.cleaner)
     const swapping = new Set(missing.map((id) => MODELS[id].step))
     for (const id of this.loaded) {
       if (!ids.includes(id) && swapping.has(MODELS[id].step)) {

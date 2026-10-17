@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { cleanerModel, DEFAULT_SETTINGS, modelsNeeded, parseSettings, stepsOf } from './settings'
+import { cleanerModel, DEFAULT_SETTINGS, modelsNeeded, parseSettings, type Settings, stepsOf } from './settings'
+
+const BOTH: Settings = { ...DEFAULT_SETTINGS, denoise: true, clean: true }
 
 describe('settings', () => {
-  it('defaults to denoising and cleaning at the original size, as PNG', () => {
+  it('defaults to no steps, with GRD, the fast cleaner and PNG at the original size', () => {
+    // No guess at whether the art needs denoising, cleaning or both.
     expect(DEFAULT_SETTINGS).toMatchObject({
-      denoise: true,
+      denoise: false,
       denoiser: 'grd',
       translator: false,
       passes: 1,
       maxQuality: false,
-      clean: true,
-      cleaner: 'auto',
+      clean: false,
+      cleaner: 'fast',
       keepUpscaled: false,
       format: 'png',
       quality: 95,
@@ -40,45 +43,52 @@ describe('settings', () => {
       }),
     ).toEqual(DEFAULT_SETTINGS)
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS)
+    // Auto is gone; it becomes the default.
+    expect(parseSettings({ ...DEFAULT_SETTINGS, cleaner: 'auto' })).toEqual(DEFAULT_SETTINGS)
+    expect(parseSettings({ ...DEFAULT_SETTINGS, cleaner: 'full', denoise: true })).toEqual({
+      ...DEFAULT_SETTINGS,
+      cleaner: 'full',
+      denoise: true,
+    })
     expect(parseSettings('nonsense')).toEqual(DEFAULT_SETTINGS)
   })
 
   it('turns settings into pipeline steps', () => {
-    expect(stepsOf(DEFAULT_SETTINGS)).toEqual({
+    expect(stepsOf(BOTH)).toEqual({
       denoise: { passes: 1, maxQuality: false },
       clean: { keepUpscaled: false },
     })
-    expect(stepsOf({ ...DEFAULT_SETTINGS, denoise: false, keepUpscaled: true })).toEqual({
+    expect(stepsOf({ ...BOTH, denoise: false, keepUpscaled: true })).toEqual({
       clean: { keepUpscaled: true },
     })
-    expect(stepsOf({ ...DEFAULT_SETTINGS, clean: false })).toEqual({ denoise: { passes: 1, maxQuality: false } })
+    expect(stepsOf({ ...BOTH, clean: false })).toEqual({ denoise: { passes: 1, maxQuality: false } })
   })
 
   it('runs DenoiseGAN one tile at a time', () => {
-    expect(stepsOf({ ...DEFAULT_SETTINGS, denoiser: 'gan', passes: 2 }).denoise).toEqual({
+    expect(stepsOf({ ...BOTH, denoiser: 'gan', passes: 2 }).denoise).toEqual({
       passes: 2,
       maxQuality: false,
       batch: 1,
     })
   })
 
-  it('picks the full cleaner on the GPU and the fast one on the CPU, unless told', () => {
-    expect(cleanerModel('auto', 'webgpu')).toBe('cleaner')
-    expect(cleanerModel('auto', 'wasm')).toBe('cleanerFast')
-    expect(cleanerModel('fast', 'webgpu')).toBe('cleanerFast')
-    expect(cleanerModel('full', 'wasm')).toBe('cleaner')
+  it('uses the cleaner chosen, on any device', () => {
+    expect(cleanerModel('fast')).toBe('cleanerFast')
+    expect(cleanerModel('full')).toBe('cleaner')
   })
 
   it('lists the models a job needs', () => {
-    expect(modelsNeeded(DEFAULT_SETTINGS, 'webgpu')).toEqual(['denoiser', 'cleaner'])
-    expect(modelsNeeded({ ...DEFAULT_SETTINGS, denoise: false }, 'wasm')).toEqual(['cleanerFast'])
-    expect(modelsNeeded({ ...DEFAULT_SETTINGS, clean: false }, 'wasm')).toEqual(['denoiser'])
-    expect(modelsNeeded({ ...DEFAULT_SETTINGS, denoiser: 'gan' }, 'webgpu')).toEqual(['denoiserGan', 'cleaner'])
-    expect(modelsNeeded({ ...DEFAULT_SETTINGS, denoiser: 'gan', translator: true, clean: false }, 'wasm')).toEqual([
+    expect(modelsNeeded(BOTH)).toEqual(['denoiser', 'cleanerFast'])
+    expect(modelsNeeded(DEFAULT_SETTINGS)).toEqual([])
+    expect(modelsNeeded({ ...BOTH, denoise: false })).toEqual(['cleanerFast'])
+    expect(modelsNeeded({ ...BOTH, denoise: false, cleaner: 'full' })).toEqual(['cleaner'])
+    expect(modelsNeeded({ ...BOTH, clean: false })).toEqual(['denoiser'])
+    expect(modelsNeeded({ ...BOTH, denoiser: 'gan' })).toEqual(['denoiserGan', 'cleanerFast'])
+    expect(modelsNeeded({ ...BOTH, denoiser: 'gan', translator: true, clean: false })).toEqual([
       'translator',
       'denoiserGan',
     ])
     // The translator only goes with DenoiseGAN.
-    expect(modelsNeeded({ ...DEFAULT_SETTINGS, translator: true, clean: false }, 'wasm')).toEqual(['denoiser'])
+    expect(modelsNeeded({ ...BOTH, translator: true, clean: false })).toEqual(['denoiser'])
   })
 })
