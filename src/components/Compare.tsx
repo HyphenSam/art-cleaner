@@ -151,7 +151,8 @@ export function Compare({
   const zoomed = zoom.view !== null
   const paneClass = cn(
     'relative min-w-0 flex-1 touch-none overflow-hidden bg-stage',
-    zoomed ? 'cursor-grab active:cursor-grabbing' : 'cursor-zoom-in',
+    // A click doesn't zoom, so no zoom cursor; the wheel does.
+    zoomed && 'cursor-grab active:cursor-grabbing',
   )
 
   return (
