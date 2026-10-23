@@ -25,9 +25,11 @@ export const codecs: Codecs = {
             : await decodeWebp(buffer)
       return { image: { width: image.width, height: image.height, data: image.data }, upright: false }
     }
-    // Anything else (AVIF, GIF, BMP…) through the browser, which turns it upright.
+    // Anything else (AVIF, GIF, BMP…) through the browser, which turns it
+    // upright and converts it to sRGB: the result carries no profile, and
+    // AVIF's colour is often CICP rather than one (colours outside sRGB clip).
     const bitmap = await createImageBitmap(new Blob([buffer], { type }), {
-      colorSpaceConversion: 'none',
+      colorSpaceConversion: 'default',
       premultiplyAlpha: 'none',
       imageOrientation: 'from-image',
     })

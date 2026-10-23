@@ -1,6 +1,7 @@
 /** The worker's logic: fetch what a job needs, keep model sessions loaded,
  * decode, run the pipeline, encode. ONNX Runtime, the codecs and the
  * network come in as dependencies, so this is tested with fakes. */
+import { embedIcc, readIcc } from './icc'
 import type { Rgba } from './image'
 import { type Asset, type ModelId, MODELS, ORT_WASM } from './manifest'
 import { orient, readOrientation } from './orientation'
@@ -105,6 +106,7 @@ export class Engine {
 
     const decoded = await this.deps.codecs.decode(job.bytes, job.type)
     const image = decoded.upright ? decoded.image : orient(decoded.image, readOrientation(job.bytes))
+    const icc = readIcc(job.bytes)
     const denoisers = denoiserModels(job.settings)
     const models: Models = {
       async denoise(tiles, n, size, sigma) {
@@ -128,7 +130,8 @@ export class Engine {
 
     onEvent({ phase: 'encode' })
     const { format, quality } = job.settings
-    const encoded = await this.deps.codecs.encode(result, format, quality)
+    let encoded = await this.deps.codecs.encode(result, format, quality)
+    if (icc) encoded = embedIcc(encoded, format, icc)
     return { bytes: encoded, width: result.width, height: result.height, mime: MIME[format] }
   }
 

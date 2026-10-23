@@ -1,5 +1,7 @@
 /** EXIF orientation: the WebAssembly decoders return pixels as stored, so
  * the app turns them upright itself (browsers do it when showing the file). */
+import { ascii, jpegSegments, pngChunks, riffChunks, view } from './containers'
+import { sniff } from './formats'
 import type { Rgba } from './image'
 
 /** The EXIF Orientation (1–8) of a JPEG, PNG or WebP file; 1 if it has none. */
@@ -13,44 +15,17 @@ export function readOrientation(bytes: Uint8Array): number {
   }
 }
 
-const view = (b: Uint8Array) => new DataView(b.buffer, b.byteOffset, b.byteLength)
-const ascii = (b: Uint8Array, at: number, n: number) => String.fromCharCode(...b.subarray(at, at + n))
-
 /** The TIFF block that holds the EXIF tags, if any. */
 function exifBlock(b: Uint8Array): Uint8Array | null {
-  const v = view(b)
-  if (b[0] === 0xff && b[1] === 0xd8) {
-    let at = 2
-    while (at + 4 <= b.length && b[at] === 0xff) {
-      const marker = b[at + 1]
-      if (marker === 0xda) return null // image data: no more headers
-      const length = v.getUint16(at + 2)
-      if (marker === 0xe1 && ascii(b, at + 4, 4) === 'Exif') return b.subarray(at + 10, at + 2 + length)
-      at += 2 + length
-    }
-    return null
-  }
-  if (ascii(b, 1, 3) === 'PNG') {
-    let at = 8
-    while (at + 8 <= b.length) {
-      const length = v.getUint32(at)
-      const type = ascii(b, at + 4, 4)
-      if (type === 'eXIf') return b.subarray(at + 8, at + 8 + length)
-      if (type === 'IEND') return null
-      at += 12 + length
-    }
-    return null
-  }
-  if (ascii(b, 0, 4) === 'RIFF' && ascii(b, 8, 4) === 'WEBP') {
-    let at = 12
-    while (at + 8 <= b.length) {
-      const length = v.getUint32(at + 4, true)
-      if (ascii(b, at, 4) === 'EXIF') {
-        const data = b.subarray(at + 8, at + 8 + length)
-        return ascii(data, 0, 4) === 'Exif' ? data.subarray(6) : data
-      }
-      at += 8 + length + (length % 2)
-    }
+  const format = sniff(b)
+  if (format === 'jpeg') {
+    for (const { marker, data } of jpegSegments(b))
+      if (marker === 0xe1 && ascii(data, 0, 4) === 'Exif') return data.subarray(6)
+  } else if (format === 'png') {
+    for (const { type, data } of pngChunks(b)) if (type === 'eXIf') return data
+  } else if (format === 'webp') {
+    for (const { fourcc, data } of riffChunks(b))
+      if (fourcc === 'EXIF') return ascii(data, 0, 4) === 'Exif' ? data.subarray(6) : data
   }
   return null
 }

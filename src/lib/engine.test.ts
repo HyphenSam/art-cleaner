@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { bytesOf } from './containers'
 import { type Codecs, Engine, type EngineDeps, type JobEvent, type Runtime } from './engine'
+import { readIcc } from './icc'
 import type { Rgba } from './image'
 import { type Asset, type ModelId, MODELS, ORT_WASM } from './manifest'
 import { modelRuns } from './pipeline'
@@ -31,7 +33,12 @@ class FakeRuntime implements Runtime {
   }
 }
 
-function setup({ backend = 'webgpu' as Backend, image = photo(300, 200), upright = false } = {}) {
+function setup({
+  backend = 'webgpu' as Backend,
+  image = photo(300, 200),
+  upright = false,
+  encoded = new Uint8Array([1, 2, 3]),
+} = {}) {
   const runtime = new FakeRuntime()
   const downloads: string[] = []
   const decoded: Rgba[] = []
@@ -41,7 +48,7 @@ function setup({ backend = 'webgpu' as Backend, image = photo(300, 200), upright
     },
     async encode(img) {
       decoded.push(img)
-      return new Uint8Array([1, 2, 3]).buffer
+      return encoded.slice().buffer
     },
   }
   const deps: EngineDeps = {
@@ -158,6 +165,22 @@ describe('Engine.process', () => {
     const already = setup({ upright: true })
     const kept = await already.engine.process({ ...job(), bytes }, () => {})
     expect([kept.width, kept.height]).toEqual([300, 200])
+  })
+
+  it("carries the original's colour profile into the result, and adds none without one", async () => {
+    const icc = new Uint8Array(40).fill(9)
+    icc.set(bytesOf('RGB '), 16)
+    const app2 = [...bytesOf('ICC_PROFILE\0'), 1, 1, ...icc]
+    const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xe2, 0, app2.length + 2, ...app2, 0xff, 0xda])
+    const ihdr = [0, 0, 0, 13, ...bytesOf('IHDR'), ...new Array(17).fill(0)]
+    const iend = [0, 0, 0, 0, ...bytesOf('IEND'), 0xae, 0x42, 0x60, 0x82]
+    const plain = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...ihdr, ...iend])
+    const settings = { ...BOTH, format: 'png' as const }
+
+    const tagged = await setup({ encoded: plain }).engine.process({ ...job(settings), bytes }, () => {})
+    expect(readIcc(new Uint8Array(tagged.bytes))).toEqual(icc)
+    const untagged = await setup({ encoded: plain }).engine.process(job(settings), () => {})
+    expect(new Uint8Array(untagged.bytes)).toEqual(plain)
   })
 
   it('reports the 2× size when keeping it', async () => {

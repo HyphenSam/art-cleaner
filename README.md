@@ -11,6 +11,8 @@ CPU where WebGPU isn't available. Install it as an app and it works offline once
   scaled back down with Lanczos3, or kept at 2× if you choose.
 - Batches, a before/after comparison (slider, toggle, side by side, with zoom), PNG, lossless WebP or
   lossy WebP output with transparency kept, and a zip of every result.
+- Results keep the original's colour profile (a Display P3 image stays P3). AVIF, GIF and BMP are
+  converted to sRGB first.
 
 ## Models and licences
 

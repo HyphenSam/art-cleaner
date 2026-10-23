@@ -66,7 +66,8 @@ light and dark both first-class.
 ## Layout
 
 - `src/lib/` pure logic: `tiles.ts` (tiling, Hann blending, ensemble, noise estimate), `lanczos.ts`,
-  `pipeline.ts` (the steps, banding), `orientation.ts` (EXIF), `assets.ts` (download, cache,
+  `pipeline.ts` (the steps, banding), `orientation.ts` (EXIF), `icc.ts` (colour profiles),
+  `containers.ts` (JPEG/PNG/RIFF block walks), `assets.ts` (download, cache,
   sha256), `manifest.ts` (asset URLs, sizes, hashes), `zoom.ts`, `settings.ts`, `names.ts`.
 - `src/worker/` the Web Worker: owns ORT sessions, decoding and encoding, runs the pipeline, posts
   progress, cancels between model runs. `src/lib/engine.ts` is its logic, testable with fakes.
@@ -93,6 +94,8 @@ keeping the 2× size).
 5. Tiles start at `0, stride, …`, `count = max(1, ceil((size - overlap) / stride))`; edges mirror
    without repeating the edge pixel; blending uses a 2D Hann window floored at 1e-3.
 6. The cleaner streams finished rows (band processing), so memory stays flat for any image size.
+7. The original's ICC profile (JPEG, PNG, WebP; RGB only) is copied into the result unchanged, with
+   no colour conversion (`icc.ts`). Formats the browser decodes are converted to sRGB instead.
 
 Models: `grd_denoiser.onnx` (inputs `image` `[N,3,H,W]`, `sigma` `[N,1]`; H, W multiples of 4),
 `denoisegan.onnx` (input `image`, 0–1, H, W multiples of 16; no sigma; weights rounded to fp16, within
