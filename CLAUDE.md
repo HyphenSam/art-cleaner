@@ -43,7 +43,7 @@ pnpm typecheck
 pnpm build            # typecheck + build to dist/; fails if any file is over Pages' 25 MiB limit
 pnpm preview          # serves dist/ with the same headers as production
 pnpm assets:prepare   # copies models/ and ORT's wasm into assets-out/ (checks every sha256)
-pnpm upload:r2        # uploads assets-out/ to R2 (needs `wrangler login`, R2_BUCKET)
+pnpm upload:r2        # uploads assets-out/ to R2 (needs `wrangler login`, R2_BUCKET); `pnpm upload:r2 <file>…` uploads just those models
 ```
 
 ## Design

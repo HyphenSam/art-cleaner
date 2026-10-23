@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ALL_ASSETS, MODELS, ORT_WASM } from '../src/lib/manifest.ts'
 import { existsSync } from 'node:fs'
 import { sep } from 'node:path'
-import { plan, uploadArgs, uploadCommand } from './plan.ts'
+import { fileItem, plan, uploadArgs, uploadCommand } from './plan.ts'
 
 describe('plan', () => {
   it('copies every asset from where it lives to its path in assets-out', () => {
@@ -17,6 +17,36 @@ describe('plan', () => {
       from: 'models/grd_denoiser.onnx',
       to: `assets-out/${MODELS.denoiser.path}`,
     })
+  })
+})
+
+describe('fileItem', () => {
+  it('uploads a file from where it is to models/<sha256[:12]>/<name>, like the manifest', () => {
+    // sha256("abc")
+    const sha = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad'
+    const item = fileItem('../Kura/onnx/new_model.onnx', new TextEncoder().encode('abc'))
+    expect(item).toEqual({
+      asset: {
+        id: 'new_model.onnx',
+        file: 'new_model.onnx',
+        sha256: sha,
+        size: 3,
+        path: `models/${sha.slice(0, 12)}/new_model.onnx`,
+      },
+      from: '../Kura/onnx/new_model.onnx',
+      to: '../Kura/onnx/new_model.onnx',
+    })
+    expect(uploadArgs('asset', 'art-cleaner', item).slice(3, 8)).toEqual([
+      `asset/art-cleaner/models/${sha.slice(0, 12)}/new_model.onnx`,
+      '--file',
+      '../Kura/onnx/new_model.onnx',
+      '--content-type',
+      'application/octet-stream',
+    ])
+  })
+
+  it('takes the name from a Windows path too', () => {
+    expect(fileItem('C:\\models\\m.onnx', new Uint8Array()).asset.file).toBe('m.onnx')
   })
 })
 

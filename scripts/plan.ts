@@ -1,5 +1,6 @@
 /** What `assets:prepare` copies and `upload:r2` uploads. */
-import { resolve } from 'node:path'
+import { createHash } from 'node:crypto'
+import { resolve, win32 } from 'node:path'
 import { ALL_ASSETS, type Asset, ORT_WASM } from '../src/lib/manifest.ts'
 
 export type Item = { asset: Asset; from: string; to: string }
@@ -12,6 +13,17 @@ export function plan(): Item[] {
     from: asset === ORT_WASM ? `node_modules/onnxruntime-web/dist/${asset.file}` : `models/${asset.file}`,
     to: `${OUT}/${asset.path}`,
   }))
+}
+
+/** A model file outside the manifest, uploaded from where it is to the path
+ * the manifest would give it, so a model can be on R2 before the site (or
+ * Kura) lists it. */
+export function fileItem(path: string, bytes: Uint8Array): Item {
+  // win32's basename splits at both / and \.
+  const file = win32.basename(path)
+  const sha256 = createHash('sha256').update(bytes).digest('hex')
+  const asset = { id: file, file, sha256, size: bytes.byteLength, path: `models/${sha256.slice(0, 12)}/${file}` }
+  return { asset, from: path, to: path }
 }
 
 /** `wrangler` arguments to upload one item. Paths change with contents, so
