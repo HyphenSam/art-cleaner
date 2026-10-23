@@ -19,7 +19,7 @@ galleries and boorus, who want the cleanest copy of each image to keep.
 
 ## Product Purpose
 
-Removes adversarial noise (GRDDenoiser) and JPEG artefacts (2x-AnimeSharpV4, upscale 2× then
+Removes adversarial noise (GRDDenoiser) and JPEG artefacts (2x IllustrationJaNai V3detail, upscale 2× then
 Lanczos back down) from art, entirely on the user's device. Success: drop a batch in, get clean
 files out, with a side-by-side check that nothing was lost.
 
@@ -34,19 +34,18 @@ server, and it keeps working offline once installed. Free and open source (MIT O
   queue; each result downloadable on its own or all as a zip.
 - A comparison view (toggle, slider, side by side with shared zoom and pan) for checking results
   at the pixel level.
-- First use downloads ONNX Runtime (27 MB) and the models (9 to 39 MB each), cached for later
+- First use downloads ONNX Runtime (27 MB) and the models (2 to 45 MB each), cached for later
   visits and offline use.
-- The cleaner is slow without WebGPU (minutes per image on the CPU); the app picks the fast
-  cleaner model there.
+- The cleaner is slow without WebGPU (minutes per image on the CPU).
 
 ## Capabilities and Constraints
 
-- Steps: Denoise (passes 1–3, optional maximum quality, about 24× slower) and Clean (model
-  Fast / Full, Fast by default; "Keep 2× size" off by default). Neither step is on until the user
+- Steps: Denoise (passes 1–3, optional maximum quality, about 24× slower) and Clean ("Keep 2× size"
+  off by default). Neither step is on until the user
   picks one. Clean always runs after Denoise.
 - Output: PNG (default, optimised), WebP lossless, WebP lossy (quality, default 95). Alpha kept.
 - Any image size (band processing); WebP output is capped at 16383 px a side.
-- Non-commercial while it ships the AnimeSharp models (CC BY-NC-SA 4.0): no ads, no paid tier.
+- Non-commercial while it ships IllustrationJaNai (CC BY-NC 4.0): no ads, no paid tier.
 
 ## Brand Commitments
 
@@ -54,13 +53,14 @@ server, and it keeps working offline once installed. Free and open source (MIT O
 - Voice: plain and quiet. Short, factual labels; explains only when asked; a tool that gets out of
   the way. British spelling.
 - Credits must stay visible: GRDDenoiser by livinginparadise (redistributed with permission);
-  2x-AnimeSharpV4 and its Fast variant by Kim2091, CC BY-NC-SA 4.0, converted to ONNX.
+  DenoiseGAN and its noise translator by livinginparadise (MIT with extra terms); 2x IllustrationJaNai
+  V3detail by the-database, CC BY-NC 4.0, with a note that the ONNX file was modified.
 
 ## Evidence on Hand
 
 No testimonials, benchmarks or sample images are provided; don't invent them. Measured speeds
-(October 2026, one Windows PC, WebGPU): denoiser about 45 ms per 256 px tile, full cleaner about
-0.7 s per tile.
+(October 2026, one Windows PC, WebGPU): denoiser about 45 ms per 256 px tile, cleaner about
+0.25 s per tile (about 2.3 s on the CPU).
 
 ## Product Principles
 

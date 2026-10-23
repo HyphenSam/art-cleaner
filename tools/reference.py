@@ -9,7 +9,7 @@ from PIL import Image
 
 models, src, out = sys.argv[1], sys.argv[2], sys.argv[3]
 steps = sys.argv[4] if len(sys.argv) > 4 else "both"
-cleaner = sys.argv[5] if len(sys.argv) > 5 else "animesharp_v4_rcan_2x.onnx"
+cleaner = sys.argv[5] if len(sys.argv) > 5 else "illustrationjanai_v3detail_fdat_m_2x.onnx"
 denoiser = sys.argv[6] if len(sys.argv) > 6 else "grd_denoiser.onnx"
 translator = sys.argv[7] if len(sys.argv) > 7 else None
 img = np.asarray(Image.open(src).convert("RGB")).astype(np.float32) / 255  # alpha is re-attached unchanged by the app

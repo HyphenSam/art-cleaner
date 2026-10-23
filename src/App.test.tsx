@@ -119,7 +119,7 @@ describe('App', () => {
     await user.click(screen.getByRole('switch', { name: 'Denoise' }))
     await user.click(screen.getByRole('switch', { name: 'Clean' }))
     await user.click(await screen.findByRole('button', { name: /Save for offline use/ }))
-    await waitFor(() => expect(client.downloads).toEqual([['denoiser', 'cleanerFast']]))
+    await waitFor(() => expect(client.downloads).toEqual([['denoiser', 'cleaner']]))
   })
 
   it('says why saving for offline use failed', async () => {
@@ -179,8 +179,17 @@ describe('App', () => {
     render(<App client={new FakeClient()} />)
     await user.click(screen.getByRole('button', { name: 'About' }))
     const dialog = screen.getByRole('dialog')
-    expect(within(dialog).getByText(/CC BY-NC-SA 4.0/)).toBeInTheDocument()
-    expect(within(dialog).getAllByText(/Kim2091/).length).toBeGreaterThan(0)
+    expect(within(dialog).getByRole('link', { name: 'CC BY-NC 4.0' })).toHaveAttribute(
+      'href',
+      'https://creativecommons.org/licenses/by-nc/4.0/',
+    )
+    expect(within(dialog).getByRole('link', { name: 'the-database' })).toHaveAttribute(
+      'href',
+      'https://github.com/the-database/mangajanai/releases/tag/3.0.0',
+    )
+    // CC BY-NC asks for changes to be indicated.
+    expect(within(dialog).getByText(/modified from the released ONNX file/)).toBeInTheDocument()
+    expect(within(dialog).queryByText(/AnimeSharp|Kim2091/)).not.toBeInTheDocument()
     expect(within(dialog).getAllByText(/livinginparadise/)).toHaveLength(2)
     expect(within(dialog).getByText(/DenoiseGAN/)).toBeInTheDocument()
     expect(within(dialog).getByRole('link', { name: /MIT licence/ })).toHaveAttribute(

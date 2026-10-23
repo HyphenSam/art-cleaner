@@ -1,7 +1,10 @@
 # Tools
 
 - `onnx/`: the Python scripts that made the ONNX models (run with `uv`; see the comments at the top of each).
-  `export_animesharp.py` and `export_animesharp_fast.py` export from PyTorch via spandrel,
+  `convert_janai.py` converts IllustrationJaNai's released bf16 ONNX file to the fp32, opset 18
+  one the site ships (a copy of Kura's `scripts/convert-janai.py`).
+  `export_animesharp.py` and `export_animesharp_fast.py` exported the AnimeSharp V4 cleaners
+  the site used before, from PyTorch via spandrel,
   `fp16_storage.py` stores weights that are exactly fp16 as fp16 with a Cast to fp32 (identical
   output, half the download), `verify.py` compares ONNX Runtime with PyTorch,
   `patch_denoiser_allowzero.py` is the DirectML fix already in `grd_denoiser.onnx`.

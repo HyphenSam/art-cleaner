@@ -56,18 +56,19 @@ export function AboutDialog() {
               </dd>
             </div>
             <div>
-              <dt className="font-medium">Cleaner: 2x-AnimeSharpV4 (RCAN) and its Fast (RCAN PU) variant</dt>
+              <dt className="font-medium">Cleaner: {MODELS.cleaner.name}</dt>
               <dd className="text-ink-soft">
                 By{' '}
                 <a href={MODELS.cleaner.sourceUrl} target="_blank" rel="noreferrer">
-                  Kim2091
+                  the-database
                 </a>
                 , licensed under{' '}
                 <a href={MODELS.cleaner.licenceUrl} target="_blank" rel="noreferrer">
-                  CC BY-NC-SA 4.0
+                  CC BY-NC 4.0
                 </a>
-                . Converted to ONNX (weights stored as 16-bit, run at 32-bit); the converted files are under the same
-                licence. Not for commercial use.
+                . Not for commercial use. {APP_NAME}'s copy is modified from the released ONNX file: its weights and
+                arithmetic were converted from bfloat16 to 32-bit floats, its operator set lowered to 18 with GELU
+                written out in elementary operations, and its batch size made variable.
               </dd>
             </div>
           </dl>

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, within } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, it, vi } from 'vitest'
@@ -29,19 +29,17 @@ describe('SettingsPanel', () => {
     expect(screen.getByRole('switch', { name: 'Clean' })).not.toBeChecked()
   })
 
-  it('starts each step with its recommended model and the 2× size off', () => {
+  it('starts with the recommended denoiser and the 2× size off', () => {
     render(<Harness />)
     expect(screen.getByRole('radio', { name: 'GRD' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: 'Fast' })).toBeChecked()
     expect(screen.getByText(/GRD is recommended/)).toBeInTheDocument()
-    expect(screen.getByText(/Fast is recommended/)).toBeInTheDocument()
     expect(screen.getByRole('switch', { name: 'Keep 2× size' })).not.toBeChecked()
   })
 
-  it('offers the fast cleaner first and the full one second, with no Auto', () => {
+  it('names the one cleaner model rather than offering a choice', () => {
     render(<Harness />)
-    const cleaners = within(screen.getByRole('radiogroup', { name: 'Cleaner model' })).getAllByRole('radio')
-    expect(cleaners.map((r) => r.textContent)).toEqual(['Fast', 'Full'])
+    expect(screen.getByText(/IllustrationJaNai/)).toBeInTheDocument()
+    expect(screen.queryByRole('radiogroup', { name: 'Cleaner model' })).not.toBeInTheDocument()
   })
 
   it("hides a step's options while it's off", async () => {
@@ -49,7 +47,6 @@ describe('SettingsPanel', () => {
     render(<Harness />)
     await user.click(screen.getByRole('switch', { name: 'Clean' }))
     expect(screen.queryByRole('switch', { name: 'Keep 2× size' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('radiogroup', { name: 'Cleaner model' })).not.toBeInTheDocument()
   })
 
   it('reports each change', async () => {
@@ -58,8 +55,8 @@ describe('SettingsPanel', () => {
     render(<Harness onChange={onChange} />)
     await user.click(screen.getByRole('switch', { name: 'Keep 2× size' }))
     expect(onChange).toHaveBeenLastCalledWith({ ...BOTH, keepUpscaled: true })
-    await user.click(screen.getByRole('radio', { name: 'Full' }))
-    expect(onChange).toHaveBeenLastCalledWith({ ...BOTH, keepUpscaled: true, cleaner: 'full' })
+    await user.click(screen.getByRole('radio', { name: 'Lossy WebP' }))
+    expect(onChange).toHaveBeenLastCalledWith({ ...BOTH, keepUpscaled: true, format: 'webp' })
   })
 
   it('keeps denoise passes and maximum quality under More options', async () => {

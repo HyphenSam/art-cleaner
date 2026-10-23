@@ -27,6 +27,12 @@ describe('manifest', () => {
     expect(assetUrl('/__assets', ORT_WASM)).toBe(`/__assets/ort/${ORT_VERSION}/${ORT_WASM.file}`)
   })
 
+  it('cleans with IllustrationJaNai only, the AnimeSharp files gone', () => {
+    const cleaners = Object.values(MODELS).filter((m) => m.step === 'clean')
+    expect(cleaners.map((m) => m.file)).toEqual(['illustrationjanai_v3detail_fdat_m_2x.onnx'])
+    expect(MODELS.cleaner.path).toBe('models/6e6824dcd1be/illustrationjanai_v3detail_fdat_m_2x.onnx')
+  })
+
   for (const model of Object.values(MODELS)) {
     it.skipIf(!existsSync(`models/${model.file}`))(`matches models/${model.file}`, () => {
       expect(readFileSync(`models/${model.file}`).byteLength).toBe(model.size)

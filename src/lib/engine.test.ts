@@ -27,7 +27,7 @@ class FakeRuntime implements Runtime {
     if (!this.sessions.has(id)) throw new Error(`${id} isn't loaded`)
     this.runs.push([id, sigma])
     if (id === 'translator') return tiles.slice()
-    return id.startsWith('cleaner') ? this.models.upscale(tiles, n, size) : this.models.denoise(tiles, n, size, sigma!)
+    return id === 'cleaner' ? this.models.upscale(tiles, n, size) : this.models.denoise(tiles, n, size, sigma!)
   }
 }
 
@@ -61,8 +61,7 @@ function setup({ backend = 'webgpu' as Backend, image = photo(300, 200), upright
   return { engine: new Engine(deps), runtime, downloads, encoded: decoded }
 }
 
-// Both steps, with the full cleaner.
-const BOTH: Settings = { ...DEFAULT_SETTINGS, denoise: true, clean: true, cleaner: 'full' }
+const BOTH: Settings = { ...DEFAULT_SETTINGS, denoise: true, clean: true }
 
 const job = (settings: Settings = BOTH) => ({ bytes: new Uint8Array([0]), type: 'image/png', settings })
 
@@ -86,35 +85,28 @@ describe('Engine.process', () => {
     expect(events.at(-1)).toEqual({ phase: 'encode' })
   })
 
-  it('uses the cleaner chosen, whatever the device', async () => {
-    const cpu = setup({ backend: 'wasm' })
-    await cpu.engine.process(job(), () => {})
-    expect(cpu.runtime.created).toEqual(['denoiser@wasm', 'cleaner@wasm'])
-    const gpu = setup()
-    await gpu.engine.process(job({ ...BOTH, cleaner: 'fast' }), () => {})
-    expect(gpu.runtime.created).toEqual(['denoiser@webgpu', 'cleanerFast@webgpu'])
+  it('uses the same cleaner on the CPU', async () => {
+    const { engine, runtime } = setup({ backend: 'wasm' })
+    await engine.process(job(), () => {})
+    expect(runtime.created).toEqual(['denoiser@wasm', 'cleaner@wasm'])
   })
 
-  it('keeps sessions between jobs, and swaps the cleaner when the choice changes', async () => {
+  it('keeps sessions between jobs', async () => {
     const { engine, runtime, downloads } = setup()
     await engine.process(job(), () => {})
     await engine.process(job(), () => {})
     expect(runtime.created).toEqual(['denoiser@webgpu', 'cleaner@webgpu'])
     expect(downloads).toEqual(['ort', 'denoiser', 'cleaner'])
-
-    await engine.process(job({ ...BOTH, cleaner: 'fast' }), () => {})
-    expect([...runtime.sessions.keys()].sort()).toEqual(['cleanerFast', 'denoiser'])
   })
 
   it('keeps the cleaner loaded through jobs that only denoise', async () => {
     // Releasing and re-creating a WebGPU session is where the page hung on "Preparing".
     const { engine, runtime } = setup()
-    const fast = { ...BOTH, cleaner: 'fast' as const }
-    await engine.process(job(fast), () => {})
-    await engine.process(job({ ...fast, clean: false }), () => {})
-    await engine.process(job(fast), () => {})
-    expect(runtime.created).toEqual(['denoiser@webgpu', 'cleanerFast@webgpu'])
-    expect([...runtime.sessions.keys()].sort()).toEqual(['cleanerFast', 'denoiser'])
+    await engine.process(job(), () => {})
+    await engine.process(job({ ...BOTH, clean: false }), () => {})
+    await engine.process(job(), () => {})
+    expect(runtime.created).toEqual(['denoiser@webgpu', 'cleaner@webgpu'])
+    expect([...runtime.sessions.keys()].sort()).toEqual(['cleaner', 'denoiser'])
   })
 
   it('runs DenoiseGAN without a noise level, after the translator when asked', async () => {
@@ -199,8 +191,8 @@ describe('Engine.process', () => {
 describe('Engine.download', () => {
   it('fetches the runtime and the chosen models without starting anything', async () => {
     const { engine, runtime, downloads } = setup({ backend: 'wasm' })
-    await engine.download(['denoiser', 'cleanerFast'], () => {})
-    expect(downloads).toEqual(['ort', 'denoiser', 'cleanerFast'])
+    await engine.download(['denoiser', 'cleaner'], () => {})
+    expect(downloads).toEqual(['ort', 'denoiser', 'cleaner'])
     expect(runtime.created).toEqual([])
   })
 })

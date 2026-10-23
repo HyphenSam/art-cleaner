@@ -4,7 +4,6 @@ import type { Steps } from './pipeline'
 
 export type Backend = 'webgpu' | 'wasm'
 export type DenoiserChoice = 'grd' | 'gan'
-export type CleanerChoice = 'fast' | 'full'
 export type OutputFormat = 'png' | 'webp-lossless' | 'webp'
 
 export type Settings = {
@@ -15,7 +14,6 @@ export type Settings = {
   passes: number
   maxQuality: boolean
   clean: boolean
-  cleaner: CleanerChoice
   keepUpscaled: boolean
   format: OutputFormat
   /** Lossy WebP's quality, 1–100. */
@@ -30,7 +28,6 @@ export const DEFAULT_SETTINGS: Settings = {
   passes: 1,
   maxQuality: false,
   clean: false,
-  cleaner: 'fast',
   keepUpscaled: false,
   format: 'png',
   quality: 95,
@@ -52,7 +49,6 @@ export function parseSettings(saved: unknown): Settings {
     passes: int(s.passes, 1, 3, d.passes),
     maxQuality: bool(s.maxQuality, d.maxQuality),
     clean: bool(s.clean, d.clean),
-    cleaner: oneOf(s.cleaner, ['fast', 'full'], d.cleaner),
     keepUpscaled: bool(s.keepUpscaled, d.keepUpscaled),
     format: oneOf(s.format, ['png', 'webp-lossless', 'webp'], d.format),
     quality: int(s.quality, 1, 100, d.quality),
@@ -69,11 +65,6 @@ export function stepsOf(s: Settings): Steps {
   }
 }
 
-/** Fast is about six times quicker than Full for about 95% of the quality. */
-export function cleanerModel(choice: CleanerChoice): ModelId {
-  return choice === 'full' ? 'cleaner' : 'cleanerFast'
-}
-
 /** In the order they run. */
 export function denoiserModels(s: Settings): ModelId[] {
   if (s.denoiser === 'grd') return ['denoiser']
@@ -81,5 +72,5 @@ export function denoiserModels(s: Settings): ModelId[] {
 }
 
 export function modelsNeeded(s: Settings): ModelId[] {
-  return [...(s.denoise ? denoiserModels(s) : []), ...(s.clean ? [cleanerModel(s.cleaner)] : [])]
+  return [...(s.denoise ? denoiserModels(s) : []), ...(s.clean ? ['cleaner' as const] : [])]
 }

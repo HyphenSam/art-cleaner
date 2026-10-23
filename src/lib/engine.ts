@@ -5,15 +5,7 @@ import type { Rgba } from './image'
 import { type Asset, type ModelId, MODELS, ORT_WASM } from './manifest'
 import { orient, readOrientation } from './orientation'
 import { apply, type Models, modelRuns } from './pipeline'
-import {
-  type Backend,
-  cleanerModel,
-  denoiserModels,
-  modelsNeeded,
-  type OutputFormat,
-  type Settings,
-  stepsOf,
-} from './settings'
+import { type Backend, denoiserModels, modelsNeeded, type OutputFormat, type Settings, stepsOf } from './settings'
 
 /** Model sessions on ONNX Runtime. */
 export interface Runtime {
@@ -89,7 +81,6 @@ export class Engine {
     // One choice of model per step at a time: they're big. A model stays
     // loaded until a job loads another for its step, since re-creating a
     // WebGPU session after releasing it could hang ORT.
-    const cleaner = cleanerModel(job.settings.cleaner)
     const swapping = new Set(missing.map((id) => MODELS[id].step))
     for (const id of this.loaded) {
       if (!ids.includes(id) && swapping.has(MODELS[id].step)) {
@@ -124,7 +115,7 @@ export class Engine {
       },
       upscale(tiles, n, size) {
         signal?.throwIfAborted()
-        return runtime.run(cleaner, tiles, n, size)
+        return runtime.run('cleaner', tiles, n, size)
       },
     }
     const total = modelRuns(image.width, image.height, steps)

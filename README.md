@@ -7,9 +7,8 @@ CPU where WebGPU isn't available. Install it as an app and it works offline once
 - **Denoise** removes adversarial noise with GRDDenoiser or DenoiseGAN (about 2.5× slower, with an
   optional noise translator for Gaussian and other unfamiliar noise); 1–3 passes, optional "maximum
   quality", which averages 24 rotated and flipped runs.
-- **Clean** removes JPEG artefacts with 2x-AnimeSharpV4: the image is upscaled 2× and scaled back
-  down with Lanczos3, or kept at 2× if you choose. Full on WebGPU, Fast (about 6× quicker) on the
-  CPU, by default.
+- **Clean** removes JPEG artefacts with 2x IllustrationJaNai V3detail: the image is upscaled 2× and
+  scaled back down with Lanczos3, or kept at 2× if you choose.
 - Batches, a before/after comparison (slider, toggle, side by side, with zoom), PNG, lossless WebP or
   lossy WebP output with transparency kept, and a zip of every result.
 
@@ -22,12 +21,13 @@ your option. **The models are not covered by that licence:**
 |---|---|---|
 | GRDDenoiser (`grd_denoiser.onnx`) | [livinginparadise](https://github.com/livinginparadise/GRDDenoiser) ([weights](https://huggingface.co/pegasiukas/GRDDenoiser)) | Redistributed with the author's permission |
 | DenoiseGAN and its noise translator (`denoisegan.onnx`, `denoisegan_translator.onnx`) | [livinginparadise](https://github.com/livinginparadise/OmniGAN) ([weights](https://huggingface.co/orangepegasus/DenoiseGAN)) | [MIT, with extra liability and indemnification terms](https://github.com/livinginparadise/OmniGAN/blob/main/LICENSE), © 2026 Algis |
-| 2x-AnimeSharpV4 RCAN and Fast RCAN PU (`animesharp_v4_rcan_2x.onnx`, `animesharp_v4_fast_rcan_pu_2x.onnx`) | [Kim2091](https://huggingface.co/Kim2091/2x-AnimeSharpV4) | [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/) |
+| 2x IllustrationJaNai V3detail (FDAT M) (`illustrationjanai_v3detail_fdat_m_2x.onnx`) | [the-database](https://github.com/the-database/mangajanai) ([release 3.0.0](https://github.com/the-database/mangajanai/releases/tag/3.0.0)) | [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) |
 
-The AnimeSharp models were converted to ONNX (fp32 maths, weights stored as fp16, which they
-already were in the original files, so the output is identical); the converted files are under the
-same CC BY-NC-SA 4.0 licence. Because of the NonCommercial term, a deployment that ships them can't
-be used commercially (no ads, no paid tier). DenoiseGAN was converted to ONNX with its weights
+The IllustrationJaNai file is modified from the released ONNX file: its weights and arithmetic were
+converted from bfloat16 to 32-bit floats (exact, since bfloat16 is the top half of a 32-bit float),
+its operator set lowered to 18 with GELU written out in elementary operations, and its batch size
+made variable (output within 1e-5 of the original's). Because of the NonCommercial term, a
+deployment that ships it can't be used commercially (no ads, no paid tier). DenoiseGAN was converted to ONNX with its weights
 rounded to fp16 (fp32 maths; output within 1/255 of the original). The scripts that made the files are in
 [`tools/onnx/`](tools/onnx).
 
@@ -41,7 +41,7 @@ pnpm test          # Vitest
 pnpm dev           # http://localhost:5173
 ```
 
-The models aren't in the repository. Put the three `.onnx` files in `models/`, then run
+The models aren't in the repository. Put the `.onnx` files listed above in `models/`, then run
 `pnpm assets:prepare` to copy them and ONNX Runtime's wasm into `assets-out/` (checking every
 sha256 against [`src/lib/manifest.ts`](src/lib/manifest.ts)); the dev server serves that folder at
 `/__assets`.

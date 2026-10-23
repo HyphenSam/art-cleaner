@@ -4,7 +4,7 @@
 
 export type Asset = { id: string; file: string; sha256: string; size: number; path: string }
 
-export type ModelId = 'denoiser' | 'denoiserGan' | 'translator' | 'cleaner' | 'cleanerFast'
+export type ModelId = 'denoiser' | 'denoiserGan' | 'translator' | 'cleaner'
 
 export type Model = Asset & {
   id: ModelId
@@ -65,26 +65,14 @@ export const MODELS: Record<ModelId, Model> = {
   cleaner: model({
     id: 'cleaner',
     step: 'clean',
-    name: '2x-AnimeSharpV4 (RCAN)',
-    author: 'Kim2091',
-    file: 'animesharp_v4_rcan_2x.onnx',
-    sha256: '53b94269589af03dfec37092865261291d50d2f5fa13045607fdb798d65861e0',
-    size: 37_001_806,
-    licence: 'CC BY-NC-SA 4.0',
-    licenceUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
-    sourceUrl: 'https://huggingface.co/Kim2091/2x-AnimeSharpV4',
-  }),
-  cleanerFast: model({
-    id: 'cleanerFast',
-    step: 'clean',
-    name: '2x-AnimeSharpV4 Fast (RCAN PU)',
-    author: 'Kim2091',
-    file: 'animesharp_v4_fast_rcan_pu_2x.onnx',
-    sha256: '7642ce7777da7e9e15955a22ea1946017bf0c508db199a3545d356e4ceed60f6',
-    size: 38_978_681,
-    licence: 'CC BY-NC-SA 4.0',
-    licenceUrl: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
-    sourceUrl: 'https://huggingface.co/Kim2091/2x-AnimeSharpV4',
+    name: '2x IllustrationJaNai V3detail (FDAT M)',
+    author: 'the-database',
+    file: 'illustrationjanai_v3detail_fdat_m_2x.onnx',
+    sha256: '6e6824dcd1befd2cc008865b92a9e9f3dfd60ef21754d091c8f6c58c42dcff8c',
+    size: 16_997_541,
+    licence: 'CC BY-NC 4.0',
+    licenceUrl: 'https://creativecommons.org/licenses/by-nc/4.0/',
+    sourceUrl: 'https://github.com/the-database/mangajanai/releases/tag/3.0.0',
   }),
 }
 

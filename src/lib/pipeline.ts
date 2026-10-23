@@ -11,7 +11,7 @@ export type Steps = {
    * is tiles per model run (`DENOISE_TILING`'s unless the model needs less
    * memory). */
   denoise?: { passes: number; maxQuality: boolean; batch?: number }
-  /** Removes JPEG artefacts: 2× with AnimeSharp, then back to the original
+  /** Removes JPEG artefacts: 2× with IllustrationJaNai, then back to the original
    * size with Lanczos3 unless `keepUpscaled`. Always after denoising. */
   clean?: { keepUpscaled: boolean }
 }

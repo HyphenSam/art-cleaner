@@ -98,9 +98,10 @@ Models: `grd_denoiser.onnx` (inputs `image` `[N,3,H,W]`, `sigma` `[N,1]`; H, W m
 `denoisegan.onnx` (input `image`, 0–1, H, W multiples of 16; no sigma; weights rounded to fp16, within
 1/255) and `denoisegan_translator.onnx` (input `image`, 0–1, any size), both wrapped at export from
 the network's [-1, 1],
-`animesharp_v4_rcan_2x.onnx` and `animesharp_v4_fast_rcan_pu_2x.onnx` (input `image`, output
-`upscaled` at 2×, clamp it; fp32 only; the fast one needs even H, W). The user picks the cleaner model,
-Fast by default (Full is about 6× slower), and neither step is on until they choose.
+and `illustrationjanai_v3detail_fdat_m_2x.onnx`, the one cleaner (input `image`, output `upscaled`
+at 2×, about −0.13…1.24, clamp it; fp32, converted from the release's bf16 by
+`tools/onnx/convert_janai.py`; keep 256 px tiles, since its attention Reshape fails at some other
+sizes; batching doesn't speed it up). Neither step is on until the user chooses.
 
 ## Hosting facts that bite
 
@@ -118,9 +119,10 @@ Fast by default (Full is about 6× slower), and neither step is on until they ch
 
 ## Licences
 
-The code is MIT OR Apache-2.0. The models are not: AnimeSharp V4 (both variants, Kim2091) is
-CC BY-NC-SA 4.0, so the site must stay non-commercial (no ads, no paid tier) while it ships them,
-and must credit and link the source and licence and say they were converted to ONNX. GRDDenoiser
+The code is MIT OR Apache-2.0. The models are not: 2x IllustrationJaNai V3detail (the-database) is
+CC BY-NC 4.0, so the site must stay non-commercial (no ads, no paid tier) while it ships it, and
+must credit and link the source and licence and say the ONNX file was modified (bf16 to fp32,
+opset 18 with GELU written out, variable batch). GRDDenoiser
 (livinginparadise) is redistributed with the author's permission. DenoiseGAN and its translator
 (livinginparadise, © 2026 Algis) are MIT with extra liability and indemnification terms; credit them
 and link the licence. Keep the credits in the UI.

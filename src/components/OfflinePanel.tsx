@@ -13,8 +13,7 @@ const LABELS: Record<string, string> = {
   denoiser: 'Denoiser, GRD',
   denoiserGan: 'Denoiser, DenoiseGAN',
   translator: 'Noise translator',
-  cleaner: 'Cleaner, Full',
-  cleanerFast: 'Cleaner, Fast',
+  cleaner: 'Cleaner',
 }
 
 /** The files the current settings need: the runtime and the models. */
@@ -50,7 +49,7 @@ export function OfflinePanel({
   const cached = new Set(info?.cached ?? [])
   const missing = assets.filter((a) => !cached.has(a.id))
   const missingBytes = missing.reduce((sum, a) => sum + a.size, 0)
-  // Saved files these settings don't use, such as the other cleaner.
+  // Saved files these settings don't use, such as the other denoiser.
   const others = ALL_ASSETS.filter((a) => cached.has(a.id) && !assets.includes(a))
   const savedBytes = ALL_ASSETS.filter((a) => cached.has(a.id)).reduce((sum, a) => sum + a.size, 0)
   const locked = busy || progress !== null

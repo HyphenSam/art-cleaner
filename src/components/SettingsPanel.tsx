@@ -2,18 +2,13 @@ import { ChevronRight } from 'lucide-react'
 import { Collapsible, Slider } from 'radix-ui'
 import { useState } from 'react'
 import { cn } from '@/lib/cn'
-import { type CleanerChoice, type DenoiserChoice, type OutputFormat, type Settings } from '@/lib/settings'
+import { type DenoiserChoice, type OutputFormat, type Settings } from '@/lib/settings'
 import { Segmented } from './ui/Segmented'
 import { Toggle } from './ui/Toggle'
 
 const DENOISERS: { value: DenoiserChoice; label: string }[] = [
   { value: 'grd', label: 'GRD' },
   { value: 'gan', label: 'DenoiseGAN' },
-]
-
-const CLEANERS: { value: CleanerChoice; label: string }[] = [
-  { value: 'fast', label: 'Fast' },
-  { value: 'full', label: 'Full' },
 ]
 
 const FORMATS: { value: OutputFormat; label: string }[] = [
@@ -93,27 +88,17 @@ export function SettingsPanel({ settings, onChange }: { settings: Settings; onCh
           <Toggle
             strong
             label="Clean"
-            hint="Removes JPEG artefacts."
+            hint="Removes JPEG artefacts with IllustrationJaNai."
             checked={settings.clean}
             onChange={(clean) => set({ clean })}
           />
           {settings.clean && (
-            <>
-              <Field label="Model" hint="Fast is recommended: about 6× quicker than Full for nearly the same quality.">
-                <Segmented
-                  label="Cleaner model"
-                  value={settings.cleaner}
-                  options={CLEANERS}
-                  onChange={(cleaner) => set({ cleaner })}
-                />
-              </Field>
-              <Toggle
-                label="Keep 2× size"
-                hint="Saves the upscaled image instead of scaling it back down."
-                checked={settings.keepUpscaled}
-                onChange={(keepUpscaled) => set({ keepUpscaled })}
-              />
-            </>
+            <Toggle
+              label="Keep 2× size"
+              hint="Saves the upscaled image instead of scaling it back down."
+              checked={settings.keepUpscaled}
+              onChange={(keepUpscaled) => set({ keepUpscaled })}
+            />
           )}
         </div>
       </Section>
